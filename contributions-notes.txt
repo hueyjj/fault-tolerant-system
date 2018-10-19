@@ -1,0 +1,4 @@
+jajeng: wrote get and post handler for Hello
+joahenri: wrote post handler for test, wrote code to instantiate server, wrote all of dockerfile, wrote unit tests
+mmart114: helped write get handler for test, wrote unit tests, wrote documentation for API
+smesparz: worked on get handler for test
