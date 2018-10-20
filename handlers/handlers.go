@@ -134,12 +134,13 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	key := vars["subject"]
 
 	if KVStore.Exists(key) {
-		value, err := KVStore.Get(key)
-		if err != nil {
-			// We never actually enter here because we check if key exists already
-			log.Printf("Unable to get value: %v\n", err)
-			http.Error(w, "Unable to find key", http.StatusBadRequest)
-		}
+		value, _ := KVStore.Get(key)
+		// We never actually enter here because we check if key exists already
+		//if err != nil {
+		//	log.Printf("Unable to get value: %v\n", err)
+		//	http.Error(w, "Unable to find key", http.StatusBadRequest)
+		//}
+
 		resp = &response.Response{
 			Result: "Success",
 			Msg:    value,
@@ -167,11 +168,42 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func subjectDEL(w http.ResponseWriter, r *http.Request) {
+	var resp *response.Response
+
+	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
-	subject := vars["subject"]
-	log.Printf(subject)
-	log.Println("hi")
-	w.WriteHeader(http.StatusOK)
+	key := vars["subject"]
+
+	if KVStore.Exists(key) {
+		err := KVStore.Delete(key)
+		if err != nil {
+			log.Printf("Unable to delete key: %v\n", err)
+			http.Error(w, "Unable to delete key", http.StatusBadRequest)
+		}
+
+		resp = &response.Response{
+			Result: "Success",
+		}
+		w.WriteHeader(http.StatusOK)
+	} else {
+		resp = &response.Response{
+			Result: "Error",
+			Msg:    "Status code 404",
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}
+
+	// Convert response into json structure and then into bytes
+	data, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	// Send response
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
 }
 
 // Serve creates a server that can be gracefully shutdown,

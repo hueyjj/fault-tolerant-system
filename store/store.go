@@ -41,7 +41,7 @@ func (s *Store) Get(key string) (string, error) {
 func (s *Store) Delete(key string) error {
 	_, exists := s.keyvalMap[key]
 	if !exists {
-		return fmt.Errorf("key %s does not exit in the map", key)
+		return fmt.Errorf("key %s does not exist in the map", key)
 	}
 	delete(s.keyvalMap, key)
 	return nil
