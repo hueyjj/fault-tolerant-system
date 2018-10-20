@@ -38,3 +38,7 @@ func (s *Store) Delete(key string) error {
 	delete(s.keyvalMap, key)
 	return nil
 }
+
+func (s *Store) Count() int {
+	return len(s.keyvalMap)
+}
