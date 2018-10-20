@@ -17,7 +17,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Global key value store to handle reads, writes, and lookup
+// KVStore is the blobal key value store for handling reads, writes, and lookup
 var KVStore = store.New()
 
 // Sends and displays a response.
@@ -127,11 +127,43 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 }
 
 func subjectGET(w http.ResponseWriter, r *http.Request) {
+	var resp *response.Response
+
+	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
-	subject := vars["subject"]
-	log.Printf(subject)
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "hi")
+	key := vars["subject"]
+
+	if KVStore.Exists(key) {
+		value, err := KVStore.Get(key)
+		if err != nil {
+			// We never actually enter here because we check if key exists already
+			log.Printf("Unable to get value: %v\n", err)
+			http.Error(w, "Unable to find key", http.StatusBadRequest)
+		}
+		resp = &response.Response{
+			Result: "Success",
+			Msg:    value,
+		}
+		w.WriteHeader(http.StatusOK)
+	} else {
+		resp = &response.Response{
+			Result: "Error",
+			Msg:    "Not Found",
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}
+
+	// Convert response into json structure and then into bytes
+	data, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	// Send response
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
 }
 
 func subjectDEL(w http.ResponseWriter, r *http.Request) {

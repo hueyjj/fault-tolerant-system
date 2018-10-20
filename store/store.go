@@ -17,7 +17,7 @@ func New() *Store {
 // Put places val into key, and returns true
 // if the value was replaced
 func (s *Store) Put(key, val string) bool {
-	val, exists := s.keyvalMap[key]
+	_, exists := s.keyvalMap[key]
 	s.keyvalMap[key] = val
 	return exists
 }
