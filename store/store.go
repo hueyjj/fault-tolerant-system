@@ -22,6 +22,14 @@ func (s *Store) Put(key, val string) bool {
 	return exists
 }
 
+func (s *Store) Exists(key string) bool {
+	_, exists := s.keyvalMap[key]
+	if !exists {
+		return false
+	}
+	return true
+}
+
 func (s *Store) Get(key string) (string, error) {
 	val, exists := s.keyvalMap[key]
 	if !exists {
