@@ -64,6 +64,30 @@ func testGET(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "GET request received")
 }
 
+func subjectPUT(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	subject := vars["subject"]
+	log.Printf(subject)
+	log.Println("hi")
+	w.WriteHeader(http.StatusOK)
+}
+
+func subjectGET(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	subject := vars["subject"]
+	log.Printf(subject)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "hi")
+}
+
+func subjectDEL(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	subject := vars["subject"]
+	log.Printf(subject)
+	log.Println("hi")
+	w.WriteHeader(http.StatusOK)
+}
+
 // Serve creates a server that can be gracefully shutdown,
 // and handles the routes as defined in the homework 1 spec
 func Serve() {
@@ -74,6 +98,9 @@ func Serve() {
 	router.HandleFunc("/hello", helloPOST).Methods("POST")
 	router.HandleFunc("/test", testPOST).Methods("POST")
 	router.HandleFunc("/test", testGET).Methods("GET")
+	router.HandleFunc("/keyValue-store/{subject}", subjectPUT).Methods("PUT")
+	router.HandleFunc("/keyValue-store/{subject}", subjectGET).Methods("GET")
+	router.HandleFunc("/keyValue-store/{subject}", subjectDEL).Methods("DELETE")
 
 	// Run a server as defined by Gorilla mux, with graceful shutdown
 	// ref: https://github.com/gorilla/mux#graceful-shutdown
