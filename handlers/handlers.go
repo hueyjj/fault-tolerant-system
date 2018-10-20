@@ -4,15 +4,22 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+	"unsafe"
 
+	"bitbucket.org/cmps128gofour/homework2/response"
+	"bitbucket.org/cmps128gofour/homework2/store"
 	"github.com/gorilla/mux"
 )
+
+// Global key value store to handle reads, writes, and lookup
+var KVStore = store.New()
 
 // Sends and displays a response.
 // A status code 200 is given
@@ -65,11 +72,59 @@ func testGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func subjectPUT(w http.ResponseWriter, r *http.Request) {
+	var resp *response.Response
+
+	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
-	subject := vars["subject"]
-	log.Printf(subject)
-	log.Println("hi")
-	w.WriteHeader(http.StatusOK)
+	key := vars["subject"]
+	value := r.PostFormValue("val")
+
+	// Return error message if key is 1 and 200 characters
+	if len(key) < 1 || len(key) > 200 {
+		resp = &response.Response{
+			Msg:    "Key not valid",
+			Result: "Error",
+		}
+		w.WriteHeader(http.StatusBadRequest) //(TODO:Jasper Jeng) Check with someone what the status code should be
+	} else if unsafe.Sizeof(value) > 1000 {
+		// Return error message if value is greater than 1 MB
+
+		resp = &response.Response{
+			Msg:    "Object too large. Size limit is 1MB",
+			Result: "Error",
+		}
+		w.WriteHeader(http.StatusBadRequest)
+	} else if KVStore.Exists(key) {
+		// Put key into store if it doesn't exists, or replace key
+
+		KVStore.Put(key, value)
+		resp = &response.Response{
+			Replaced: "True",
+			Msg:      "Updated successfully",
+		}
+		w.WriteHeader(http.StatusOK)
+	} else {
+		// Replace value in store
+
+		KVStore.Put(key, value)
+		resp = &response.Response{
+			Replaced: "False",
+			Msg:      "Added successfully",
+		}
+		w.WriteHeader(http.StatusCreated)
+	}
+
+	// Convert response into json structure and then into bytes
+	data, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	// Send response
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
 }
 
 func subjectGET(w http.ResponseWriter, r *http.Request) {
