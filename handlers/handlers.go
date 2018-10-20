@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"time"
-	"unsafe"
 
 	"bitbucket.org/cmps128gofour/homework2/response"
 	"bitbucket.org/cmps128gofour/homework2/store"
@@ -86,7 +85,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 			Result: "Error",
 		}
 		w.WriteHeader(http.StatusBadRequest) //(TODO:Jasper Jeng) Check with someone what the status code should be
-	} else if unsafe.Sizeof(value) > 1000 {
+	} else if len(value) > 1000000 {
 		// Return error message if value is greater than 1 MB
 
 		resp = &response.Response{
