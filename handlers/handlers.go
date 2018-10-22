@@ -20,8 +20,6 @@ import (
 // KVStore is the blobal key value store for handling reads, writes, and lookup
 var KVStore = store.New()
 
-var mainIP string
-
 // Sends and displays a response.
 // A status code 200 is given
 // when a client makes a GET request to the /hello resource.
@@ -231,57 +229,6 @@ func Serve(ip string, port string) {
 		// So we bind to 0.0.0.0 (AKA the global interface) instead
 		// that way we can access it outside the docker container
 		Addr:         fmt.Sprintf("%s:%s", ip, port),
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
-	// Run the server
-	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("could not start server: %v", err)
-		}
-	}()
-
-	log.Println("started server on:", srv.Addr)
-
-	// Make a channel, and send a value on that channel
-	// whenever we get an os.Interrupt signal
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-
-	// Block until we receive our signal.
-	<-c
-
-	// Create a deadline to wait for, and shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*15)
-	defer cancel()
-	srv.Shutdown(ctx)
-	log.Println("server shutting down")
-}
-
-// Serve creates a server that can be gracefully shutdown,
-// and handles the routes as defined in the homework 1 spec
-func ForwardServe(ip string, port string, mIP string) {
-	mainIP = mIP
-	router := mux.NewRouter()
-	// Add handlers here
-	router.HandleFunc("/hello", helloGET).Methods("GET")
-	router.HandleFunc("/hello", helloPOST).Methods("POST")
-	router.HandleFunc("/test", testPOST).Methods("POST")
-	router.HandleFunc("/test", testGET).Methods("GET")
-	router.HandleFunc("/keyValue-store/{subject}", subjectPUT).Methods("PUT")
-	router.HandleFunc("/keyValue-store/{subject}", subjectGET).Methods("GET")
-	router.HandleFunc("/keyValue-store/{subject}", subjectDEL).Methods("DELETE")
-
-	// Run a server as defined by Gorilla mux, with graceful shutdown
-	// ref: https://github.com/gorilla/mux#graceful-shutdown
-
-	srv := &http.Server{
-		Handler: router,
-		// Since we're running in docker, we can't bind to localhost (AKA 127.0.0.1)
-		// So we bind to 0.0.0.0 (AKA the global interface) instead
-		// that way we can access it outside the docker container
-		Addr:         fmt.Sprintf("%s:%s:%s", ip, port, mainIP),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
