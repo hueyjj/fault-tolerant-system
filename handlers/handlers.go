@@ -96,7 +96,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusBadRequest)
 	} else if KVStore.Exists(key) {
-		// Put key into store if it doesn't exists, or replace key
+		// Replace value in store
 
 		KVStore.Put(key, value)
 		resp = &response.Response{
@@ -105,7 +105,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 	} else {
-		// Replace value in store
+		// Put key into store if it doesn't exists, or replace key
 
 		KVStore.Put(key, value)
 		resp = &response.Response{
