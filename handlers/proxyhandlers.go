@@ -59,6 +59,49 @@ func proxySubjectGET(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
+	// Parse the key from url variable and (store) value from the request
+	vars := mux.Vars(r)
+	key := vars["subject"]
+
+	// make request
+	requestString := fmt.Sprintf("%s/keyValue-store/%s", mainIP, key)
+	request, err := http.NewRequest(http.MethodDelete, requestString, nil)
+
+	if err != nil {
+		log.Println("could not make request:", err)
+		return
+	}
+
+	// Send the request
+	response, err := client.Do(request)
+
+	if err != nil {
+		log.Println("could not get response:", err)
+	}
+
+	fmt.Println(response)
+
+	// Write the header
+	w.WriteHeader(response.StatusCode)
+	w.Header().Set("content-type", "application/json")
+
+	// Read the body
+	body, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		log.Println("could not read body:", err)
+		return
+	}
+
+	// Write the body
+	_, err = w.Write(body)
+	if err != nil {
+		log.Println("could not write body:", err)
+	}
+
+}
+
 func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
@@ -115,7 +158,7 @@ func ForwardServe(ip string, port string, mIP string) {
 	router.HandleFunc("/test", testGET).Methods("GET")
 	router.HandleFunc("/keyValue-store/{subject}", proxySubjectPUT).Methods("PUT")
 	router.HandleFunc("/keyValue-store/{subject}", proxySubjectGET).Methods("GET")
-	router.HandleFunc("/keyValue-store/{subject}", subjectDEL).Methods("DELETE")
+	router.HandleFunc("/keyValue-store/{subject}", proxySubjectDEL).Methods("DELETE")
 
 	// Run a server as defined by Gorilla mux, with graceful shutdown
 	// ref: https://github.com/gorilla/mux#graceful-shutdown
