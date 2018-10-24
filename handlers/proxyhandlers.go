@@ -154,6 +154,7 @@ func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 func respondError501(w http.ResponseWriter) {
 
 	w.WriteHeader(http.StatusNotImplemented)
+	w.Header().Set("content-type", "application/json")
 	var resp *clientResponse.Response
 	resp = &clientResponse.Response{
 		Result: "Error",
