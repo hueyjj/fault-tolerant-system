@@ -37,53 +37,28 @@ func proxySubjectGET(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Println("could not get response:", err)
+		// Main server is down
+		respondError501(w)
 	}
 	log.Println("response status code: ", response.StatusCode)
+
 	// Write the header
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
+	// Read the body
+	body, err := ioutil.ReadAll(response.Body)
 
-	// If main server is not down
-	if response.StatusCode != http.StatusNotImplemented {
-
-		// Read the body
-		body, err := ioutil.ReadAll(response.Body)
-
-		if err != nil {
-			log.Println("could not read body:", err)
-			return
-		}
-
-		// Write the body
-		_, err = w.Write(body)
-		if err != nil {
-			log.Println("could not write body:", err)
-		}
-	} else {
-		respondError501(w)
-	}
-
-}
-
-// Have the ResponseWriter write response 501 in JSON format.
-func respondError501(w http.ResponseWriter) {
-	var resp *clientResponse.Response
-	resp = &clientResponse.Response{
-		Result: "Error",
-		Msg:    "Server unavailable",
-	}
-
-	// Convert response into json structure and then into bytes
-	data, err := json.Marshal(resp)
 	if err != nil {
-		log.Printf("Unable to marshal response: %v\n", err)
-		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		log.Println("could not read body:", err)
 		return
 	}
-	_, err = w.Write(data)
+
+	// Write the body
+	_, err = w.Write(body)
 	if err != nil {
 		log.Println("could not write body:", err)
 	}
+
 }
 
 func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +80,8 @@ func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Println("could not get response:", err)
+		// Main server is down
+		respondError501(w)
 	}
 
 	fmt.Println(response)
@@ -112,25 +89,18 @@ func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
 	// Write the header
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
+	// Read the body
+	body, err := ioutil.ReadAll(response.Body)
 
-	// If main server is not down
-	if response.StatusCode != http.StatusNotImplemented {
+	if err != nil {
+		log.Println("could not read body:", err)
+		return
+	}
 
-		// Read the body
-		body, err := ioutil.ReadAll(response.Body)
-
-		if err != nil {
-			log.Println("could not read body:", err)
-			return
-		}
-
-		// Write the body
-		_, err = w.Write(body)
-		if err != nil {
-			log.Println("could not write body:", err)
-		}
-	} else {
-		respondError501(w)
+	// Write the body
+	_, err = w.Write(body)
+	if err != nil {
+		log.Println("could not write body:", err)
 	}
 
 }
@@ -155,6 +125,8 @@ func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Println("could not get response:", err)
+		// Main server is down
+		respondError501(w)
 	}
 
 	fmt.Println(response)
@@ -162,25 +134,42 @@ func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 	// Write the header
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
+	// Read the body
+	body, err := ioutil.ReadAll(response.Body)
 
-	// If main server is not down
-	if response.StatusCode != http.StatusNotImplemented {
+	if err != nil {
+		log.Println("could not read body:", err)
+		return
+	}
 
-		// Read the body
-		body, err := ioutil.ReadAll(response.Body)
+	// Write the body
+	_, err = w.Write(body)
+	if err != nil {
+		log.Println("could not write body:", err)
+	}
 
-		if err != nil {
-			log.Println("could not read body:", err)
-			return
-		}
+}
 
-		// Write the body
-		_, err = w.Write(body)
-		if err != nil {
-			log.Println("could not write body:", err)
-		}
-	} else {
-		respondError501(w)
+// Have the ResponseWriter write response 501 in JSON format.
+func respondError501(w http.ResponseWriter) {
+
+	w.WriteHeader(http.StatusNotImplemented)
+	var resp *clientResponse.Response
+	resp = &clientResponse.Response{
+		Result: "Error",
+		Msg:    "Server unavailable",
+	}
+
+	// Convert response into json structure and then into bytes
+	data, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		return
+	}
+	_, err = w.Write(data)
+	if err != nil {
+		log.Println("could not write body:", err)
 	}
 }
 
