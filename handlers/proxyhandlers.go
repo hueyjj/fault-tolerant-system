@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"os/signal"
 	"time"
 
+	clientResponse "bitbucket.org/cmps128gofour/homework2/response"
 	"github.com/gorilla/mux"
 )
 
@@ -36,27 +38,52 @@ func proxySubjectGET(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("could not get response:", err)
 	}
-
-	fmt.Println(response)
-
+	log.Println("response status code: ", response.StatusCode)
 	// Write the header
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
 
-	// Read the body
-	body, err := ioutil.ReadAll(response.Body)
+	// If main server is not down
+	if response.StatusCode != http.StatusNotImplemented {
 
-	if err != nil {
-		log.Println("could not read body:", err)
-		return
+		// Read the body
+		body, err := ioutil.ReadAll(response.Body)
+
+		if err != nil {
+			log.Println("could not read body:", err)
+			return
+		}
+
+		// Write the body
+		_, err = w.Write(body)
+		if err != nil {
+			log.Println("could not write body:", err)
+		}
+	} else {
+		respondError501(w)
 	}
 
-	// Write the body
-	_, err = w.Write(body)
+}
+
+// Have the ResponseWriter write response 501 in JSON format.
+func respondError501(w http.ResponseWriter) {
+	var resp *clientResponse.Response
+	resp = &clientResponse.Response{
+		Result: "Error",
+		Msg:    "Server unavailable",
+	}
+
+	// Convert response into json structure and then into bytes
+	data, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		return
+	}
+	_, err = w.Write(data)
 	if err != nil {
 		log.Println("could not write body:", err)
 	}
-
 }
 
 func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
@@ -86,18 +113,24 @@ func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
 
-	// Read the body
-	body, err := ioutil.ReadAll(response.Body)
+	// If main server is not down
+	if response.StatusCode != http.StatusNotImplemented {
 
-	if err != nil {
-		log.Println("could not read body:", err)
-		return
-	}
+		// Read the body
+		body, err := ioutil.ReadAll(response.Body)
 
-	// Write the body
-	_, err = w.Write(body)
-	if err != nil {
-		log.Println("could not write body:", err)
+		if err != nil {
+			log.Println("could not read body:", err)
+			return
+		}
+
+		// Write the body
+		_, err = w.Write(body)
+		if err != nil {
+			log.Println("could not write body:", err)
+		}
+	} else {
+		respondError501(w)
 	}
 
 }
@@ -130,20 +163,25 @@ func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
 
-	// Read the body
-	body, err := ioutil.ReadAll(response.Body)
+	// If main server is not down
+	if response.StatusCode != http.StatusNotImplemented {
 
-	if err != nil {
-		log.Println("could not read body:", err)
-		return
+		// Read the body
+		body, err := ioutil.ReadAll(response.Body)
+
+		if err != nil {
+			log.Println("could not read body:", err)
+			return
+		}
+
+		// Write the body
+		_, err = w.Write(body)
+		if err != nil {
+			log.Println("could not write body:", err)
+		}
+	} else {
+		respondError501(w)
 	}
-
-	// Write the body
-	_, err = w.Write(body)
-	if err != nil {
-		log.Println("could not write body:", err)
-	}
-
 }
 
 // Serve creates a server that can be gracefully shutdown,
