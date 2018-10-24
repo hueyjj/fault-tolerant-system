@@ -39,6 +39,7 @@ func proxySubjectGET(w http.ResponseWriter, r *http.Request) {
 		log.Println("could not get response:", err)
 		// Main server is down
 		respondError501(w)
+		return
 	}
 	log.Println("response status code: ", response.StatusCode)
 
@@ -82,6 +83,7 @@ func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
 		log.Println("could not get response:", err)
 		// Main server is down
 		respondError501(w)
+		return
 	}
 
 	fmt.Println(response)
@@ -127,6 +129,7 @@ func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 		log.Println("could not get response:", err)
 		// Main server is down
 		respondError501(w)
+		return
 	}
 
 	fmt.Println(response)
