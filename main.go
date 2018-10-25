@@ -1,24 +1,22 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"bitbucket.org/cmps128gofour/homework2/handlers"
 )
 
 func main() {
-
 	ip := os.Getenv("IP")
 	port := os.Getenv("PORT")
 	mainIP := os.Getenv("MAINIP")
 
 	if mainIP == "" {
-		fmt.Println("MAIN")
+		log.Print("Starting main server")
 		handlers.Serve(ip, port)
 	} else {
-		fmt.Println("FORWARD")
+		log.Print("Starting forwarding server")
 		handlers.ForwardServe(ip, port, mainIP)
 	}
-
 }

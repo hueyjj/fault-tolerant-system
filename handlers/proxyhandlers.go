@@ -7,8 +7,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	clientResponse "bitbucket.org/cmps128gofour/homework2/response"
@@ -47,8 +49,53 @@ func proxySubjectGET(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
 	// Read the body
+
+	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 
+	if err != nil {
+		log.Println("could not read body:", err)
+		return
+	}
+
+	// Write the body
+	_, err = w.Write(body)
+	if err != nil {
+		log.Println("could not write body:", err)
+	}
+
+}
+
+func proxySubjectSEARCH(w http.ResponseWriter, r *http.Request) {
+	// Parse the key from url variable and (store) value from the request
+	vars := mux.Vars(r)
+	key := vars["subject"]
+
+	// make request
+	requestString := fmt.Sprintf("%s/keyValue-store/search/%s", mainIP, key)
+	request, err := http.NewRequest(http.MethodGet, requestString, nil)
+	if err != nil {
+		log.Println("could not make request:", err)
+		return
+	}
+
+	// Send the request
+	response, err := client.Do(request)
+	if err != nil {
+		log.Println("could not get response:", err)
+		// Main server is down
+		respondError501(w)
+		return
+	}
+	log.Println("response status code: ", response.StatusCode)
+
+	// Write the header
+	w.WriteHeader(response.StatusCode)
+	w.Header().Set("content-type", "application/json")
+
+	// Read the body
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		log.Println("could not read body:", err)
 		return
@@ -70,7 +117,6 @@ func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
 	// make request
 	requestString := fmt.Sprintf("%s/keyValue-store/%s", mainIP, key)
 	request, err := http.NewRequest(http.MethodDelete, requestString, nil)
-
 	if err != nil {
 		log.Println("could not make request:", err)
 		return
@@ -78,7 +124,6 @@ func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
 
 	// Send the request
 	response, err := client.Do(request)
-
 	if err != nil {
 		log.Println("could not get response:", err)
 		// Main server is down
@@ -86,14 +131,13 @@ func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(response)
-
 	// Write the header
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
-	// Read the body
-	body, err := ioutil.ReadAll(response.Body)
 
+	// Read the body
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		log.Println("could not read body:", err)
 		return
@@ -104,27 +148,29 @@ func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("could not write body:", err)
 	}
-
 }
 
 func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
-	value := r.PostFormValue("val")
 
-	// make request
-	requestString := fmt.Sprintf("%s/keyValue-store/%s?val=%s", mainIP, key, value)
-	request, err := http.NewRequest(http.MethodPut, requestString, nil)
+	// Create form data
+	form := url.Values{}
+	form.Add("val", r.PostFormValue("val"))
 
+	// Make request
+	requestString := fmt.Sprintf("%s/keyValue-store/%s", mainIP, key)
+	request, err := http.NewRequest(http.MethodPut, requestString, strings.NewReader(form.Encode()))
 	if err != nil {
-		log.Println("could not make request:", err)
+		log.Println("could not create request:", err)
 		return
 	}
 
+	request.Header.Add("content-type", "application/x-www-form-urlencoded")
+
 	// Send the request
 	response, err := client.Do(request)
-
 	if err != nil {
 		log.Println("could not get response:", err)
 		// Main server is down
@@ -132,14 +178,13 @@ func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(response)
-
 	// Write the header
 	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
-	// Read the body
-	body, err := ioutil.ReadAll(response.Body)
 
+	// Read the body
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		log.Println("could not read body:", err)
 		return
@@ -150,12 +195,10 @@ func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("could not write body:", err)
 	}
-
 }
 
 // Have the ResponseWriter write response 501 in JSON format.
 func respondError501(w http.ResponseWriter) {
-
 	w.WriteHeader(http.StatusNotImplemented)
 	w.Header().Set("content-type", "application/json")
 	var resp *clientResponse.Response
@@ -177,7 +220,7 @@ func respondError501(w http.ResponseWriter) {
 	}
 }
 
-// Serve creates a server that can be gracefully shutdown,
+// ForwardServe creates a forwarding server that can be gracefully shutdown,
 // and handles the routes as defined in the homework 1 spec
 func ForwardServe(ip string, port string, mIP string) {
 	mainIP = "http://" + mIP
@@ -189,6 +232,7 @@ func ForwardServe(ip string, port string, mIP string) {
 	router.HandleFunc("/test", testGET).Methods("GET")
 	router.HandleFunc("/keyValue-store/{subject}", proxySubjectPUT).Methods("PUT")
 	router.HandleFunc("/keyValue-store/{subject}", proxySubjectGET).Methods("GET")
+	router.HandleFunc("/keyValue-store/search/{subject}", proxySubjectSEARCH).Methods("GET")
 	router.HandleFunc("/keyValue-store/{subject}", proxySubjectDEL).Methods("DELETE")
 
 	// Run a server as defined by Gorilla mux, with graceful shutdown

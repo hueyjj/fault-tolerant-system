@@ -71,13 +71,12 @@ func testGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func subjectPUT(w http.ResponseWriter, r *http.Request) {
-	var resp *response.Response
-
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
 	value := r.PostFormValue("val")
 
+	var resp *response.Response
 	// Return error message if key is 1 and 200 characters
 	if len(key) < 1 || len(key) > 200 {
 		resp = &response.Response{
@@ -127,20 +126,13 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 }
 
 func subjectGET(w http.ResponseWriter, r *http.Request) {
-	var resp *response.Response
-
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
+	var resp *response.Response
 	if KVStore.Exists(key) {
 		value, _ := KVStore.Get(key)
-		// We never actually enter here because we check if key exists already
-		//if err != nil {
-		//	log.Printf("Unable to get value: %v\n", err)
-		//	http.Error(w, "Unable to find key", http.StatusBadRequest)
-		//}
-
 		resp = &response.Response{
 			Result: "Success",
 			Msg:    value,
@@ -200,12 +192,11 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 }
 
 func subjectDEL(w http.ResponseWriter, r *http.Request) {
-	var resp *response.Response
-
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
+	var resp *response.Response
 	if KVStore.Exists(key) {
 		err := KVStore.Delete(key)
 		if err != nil {
