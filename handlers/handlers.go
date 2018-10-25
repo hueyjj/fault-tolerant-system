@@ -84,7 +84,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 			Msg:    "Key not valid",
 			Result: "Error",
 		}
-		w.WriteHeader(http.StatusBadRequest) //(TODO:Jasper Jeng) Check with someone what the status code should be
+		w.WriteHeader(http.StatusBadRequest)
 	} else if len(value) > 1000000 {
 		// Return error message if value is greater than 1 MB
 
@@ -167,6 +167,38 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
+	// Parse the key from url variable and (store) value from the request
+	vars := mux.Vars(r)
+	key := vars["subject"]
+
+	var resp *response.Response
+	if KVStore.Exists(key) {
+		resp = &response.Response{
+			Msg:      "Success",
+			IsExists: "true",
+		}
+	} else {
+		resp = &response.Response{
+			Msg:      "Error",
+			IsExists: "false",
+		}
+	}
+
+	// Convert response into json structure and then into bytes
+	data, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	// Send response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	var resp *response.Response
 
@@ -218,6 +250,7 @@ func Serve(ip string, port string) {
 	router.HandleFunc("/test", testGET).Methods("GET")
 	router.HandleFunc("/keyValue-store/{subject}", subjectPUT).Methods("PUT")
 	router.HandleFunc("/keyValue-store/{subject}", subjectGET).Methods("GET")
+	router.HandleFunc("/keyValue-store/search/{subject}", subjectSEARCH).Methods("GET")
 	router.HandleFunc("/keyValue-store/{subject}", subjectDEL).Methods("DELETE")
 
 	// Run a server as defined by Gorilla mux, with graceful shutdown

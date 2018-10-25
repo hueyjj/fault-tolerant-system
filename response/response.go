@@ -5,4 +5,5 @@ type Response struct {
 	Msg      string `json:"msg,omitempty"`
 	Value    string `json:"value,omitempty"`
 	Result   string `json:"result,omitempty"`
+	IsExists string `json:"isExists,omitempty"`
 }
