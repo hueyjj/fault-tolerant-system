@@ -12,8 +12,11 @@ func main() {
 	port := os.Getenv("PORT")
 	mainIP := os.Getenv("MAINIP")
 
-	if ip == "" || port == "" {
+	if ip == "" {
 		ip = "0.0.0.0"
+	}
+
+	if port == "" {
 		port = "8080"
 	}
 
