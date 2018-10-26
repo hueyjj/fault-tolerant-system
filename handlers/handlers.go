@@ -17,7 +17,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// KVStore is the blobal key value store for handling reads, writes, and lookup
+// KVStore is the global key value store for handling reads, writes, and lookup
 var KVStore = store.New()
 
 // Sends and displays a response.
