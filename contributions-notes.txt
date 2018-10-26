@@ -4,3 +4,4 @@ mmart114: helped write get handler for test, wrote unit tests, wrote documentati
 smesparz: worked on get handler for test
 
 jajeng: helped write search, get, put, del, and proxy handlers. Update dockerfile. 
+mmart114: CO-piloted in a little of everything: helped write store.go, helped write response.go, helped write proxySubjectDel method, helped write case when primary fails.
