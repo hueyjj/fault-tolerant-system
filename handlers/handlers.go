@@ -135,7 +135,7 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 		value, _ := KVStore.Get(key)
 		resp = &response.Response{
 			Result: "Success",
-			Msg:    value,
+			Value:  value,
 		}
 		w.WriteHeader(http.StatusOK)
 	} else {
@@ -167,12 +167,12 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	var resp *response.Response
 	if KVStore.Exists(key) {
 		resp = &response.Response{
-			Msg:      "Success",
+			Result:   "Success",
 			IsExists: true,
 		}
 	} else {
 		resp = &response.Response{
-			Msg:      "Error",
+			Result:   "Success",
 			IsExists: false,
 		}
 	}
