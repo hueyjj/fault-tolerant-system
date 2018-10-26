@@ -12,6 +12,11 @@ func main() {
 	port := os.Getenv("PORT")
 	mainIP := os.Getenv("MAINIP")
 
+	if ip == "" || port == "" {
+		ip = "0.0.0.0"
+		port = "8080"
+	}
+
 	if mainIP == "" {
 		log.Print("Starting main server")
 		handlers.Serve(ip, port)

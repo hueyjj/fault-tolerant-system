@@ -97,7 +97,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 
 		KVStore.Put(key, value)
 		resp = &response.Response{
-			Replaced: "True",
+			Replaced: true,
 			Msg:      "Updated successfully",
 		}
 		w.WriteHeader(http.StatusOK)
@@ -106,7 +106,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 
 		KVStore.Put(key, value)
 		resp = &response.Response{
-			Replaced: "False",
+			Replaced: false,
 			Msg:      "Added successfully",
 		}
 		w.WriteHeader(http.StatusCreated)
@@ -168,12 +168,12 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	if KVStore.Exists(key) {
 		resp = &response.Response{
 			Msg:      "Success",
-			IsExists: "true",
+			IsExists: true,
 		}
 	} else {
 		resp = &response.Response{
 			Msg:      "Error",
-			IsExists: "false",
+			IsExists: false,
 		}
 	}
 
