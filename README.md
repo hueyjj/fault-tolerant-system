@@ -26,9 +26,9 @@ docker build -t cmps128gofour/homework2 .
 ## Running the server
 ```sh
 # If built with go
-./homework1 # To stop the server, press ctrl-c
+./homework2 # To stop the server, press ctrl-c
 # if built with docker
-docker run --rm -p 127.0.0.1:8080:8080 cmps128gofour/homework1:latest # Again, to stop the server, press ctrl-c
+docker run --rm -p 127.0.0.1:8080:8080 cmps128gofour/homework2:latest # Again, to stop the server, press ctrl-c
 ```
 
 ## Testing the output of the server
