@@ -23,7 +23,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 			Result: "Error",
 		}
 		w.WriteHeader(http.StatusBadRequest)
-	} else if len(value) > 1000000 {
+	} else if len(value) > 1e6 {
 		// Return error message if value is greater than 1 MB
 
 		resp = &response.Response{
