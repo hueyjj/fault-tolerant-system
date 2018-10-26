@@ -230,6 +230,7 @@ func ForwardServe(ip string, port string, mIP string) {
 	router.HandleFunc("/hello", helloPOST).Methods("POST")
 	router.HandleFunc("/test", testPOST).Methods("POST")
 	router.HandleFunc("/test", testGET).Methods("GET")
+	// Homework 2
 	router.HandleFunc("/keyValue-store/{subject}", proxySubjectPUT).Methods("PUT")
 	router.HandleFunc("/keyValue-store/{subject}", proxySubjectGET).Methods("GET")
 	router.HandleFunc("/keyValue-store/search/{subject}", proxySubjectSEARCH).Methods("GET")
