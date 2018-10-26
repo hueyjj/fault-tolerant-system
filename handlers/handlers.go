@@ -1,5 +1,5 @@
 // Package handlers defines the http handler functions
-// that will be used in the homework 1 program
+// that will be used in the cs128 homeworks
 package handlers
 
 import (
