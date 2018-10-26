@@ -21,10 +21,10 @@ func main() {
 	}
 
 	if mainIP == "" {
-		log.Print("Starting main server")
+		log.Println("Main Server Started")
 		handlers.Serve(ip, port)
 	} else {
-		log.Print("Starting forwarding server")
+		log.Println("Forwarding Server Started")
 		handlers.ForwardServe(ip, port, mainIP)
 	}
 }
