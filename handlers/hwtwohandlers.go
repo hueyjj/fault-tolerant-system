@@ -10,6 +10,8 @@ import (
 )
 
 func subjectPUT(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
@@ -60,11 +62,12 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send response
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
 func subjectGET(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
@@ -94,7 +97,6 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send response
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
@@ -131,6 +133,8 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 }
 
 func subjectDEL(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
@@ -164,6 +168,5 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send response
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
