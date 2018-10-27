@@ -18,6 +18,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	value := r.PostFormValue("val")
 
 	var resp *response.Response
+	replaced := new(bool)
 	// Return error message if key is 1 and 200 characters
 	if len(key) < 1 || len(key) > 200 {
 		resp = &response.Response{
@@ -27,7 +28,6 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	} else if len(value) > 1e6 {
 		// Return error message if value is greater than 1 MB
-
 		resp = &response.Response{
 			Msg:    "Object too large. Size limit is 1MB",
 			Result: "Error",
@@ -35,19 +35,19 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	} else if KVStore.Exists(key) {
 		// Replace value in store
-
 		KVStore.Put(key, value)
+		*replaced = true
 		resp = &response.Response{
-			Replaced: true,
+			Replaced: replaced,
 			Msg:      "Updated successfully",
 		}
 		w.WriteHeader(http.StatusOK)
 	} else {
 		// Put key into store if it doesn't exists, or replace key
-
 		KVStore.Put(key, value)
+		*replaced = false
 		resp = &response.Response{
-			Replaced: false,
+			Replaced: replaced,
 			Msg:      "Added successfully",
 		}
 		w.WriteHeader(http.StatusCreated)
@@ -106,15 +106,18 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	key := vars["subject"]
 
 	var resp *response.Response
+	isExists := new(bool)
 	if KVStore.Exists(key) {
+		*isExists = true
 		resp = &response.Response{
 			Result:   "Success",
-			IsExists: true,
+			IsExists: isExists,
 		}
 	} else {
+		*isExists = false
 		resp = &response.Response{
 			Result:   "Success",
-			IsExists: false,
+			IsExists: isExists,
 		}
 	}
 
