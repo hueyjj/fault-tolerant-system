@@ -42,8 +42,8 @@ func proxySubjectGET(w http.ResponseWriter, r *http.Request) {
 	log.Println("response status code: ", response.StatusCode)
 
 	// Write the header
-	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(response.StatusCode)
 	// Read the body
 
 	defer response.Body.Close()
@@ -86,8 +86,8 @@ func proxySubjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	log.Println("response status code: ", response.StatusCode)
 
 	// Write the header
-	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(response.StatusCode)
 
 	// Read the body
 	defer response.Body.Close()
@@ -128,8 +128,8 @@ func proxySubjectDEL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the header
-	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(response.StatusCode)
 
 	// Read the body
 	defer response.Body.Close()
@@ -175,8 +175,8 @@ func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the header
-	w.WriteHeader(response.StatusCode)
 	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(response.StatusCode)
 
 	// Read the body
 	defer response.Body.Close()
@@ -195,8 +195,8 @@ func proxySubjectPUT(w http.ResponseWriter, r *http.Request) {
 
 // Have the ResponseWriter write response 501 in JSON format.
 func respondError501(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusNotImplemented)
 	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(http.StatusNotImplemented)
 	var resp *clientResponse.Response
 	resp = &clientResponse.Response{
 		Result: "Error",
