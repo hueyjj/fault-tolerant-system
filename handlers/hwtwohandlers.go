@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"bitbucket.org/cmps128gofour/homework2/response"
+	"bitbucket.org/cmps128gofour/homework3/response"
 	"github.com/gorilla/mux"
 )
 

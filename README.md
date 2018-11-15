@@ -7,7 +7,7 @@ Class project for UCSC CMPS 128 Distributed Systems.
 ```sh
 mkdir -p $GOPATH/src/bitbucket.org/cmps128gofour
 cd $GOPATH/src/bitbucket.org/cmps128gofour
-git clone https://$USERNAME@bitbucket.org/cmps128gofour/homework2.git
+git clone https://$USERNAME@bitbucket.org/cmps128gofour/homework3.git
 ```
 
 ## Install dependencies
@@ -24,14 +24,14 @@ go get -u github.com/stretchr/testify/assert
 go build
 
 # Or using docker
-docker build -t cmps128gofour/homework2 .
+docker build -t cmps128gofour/homework3 .
 ```
 
 ## Running the server
 
 ```sh
 # If built with go
-./homework2 # To stop the server, press ctrl-c
+./homework3 # To stop the server, press ctrl-c
 # if built with docker
 docker run --rm -p 8083:8080  --ip=10.0.0.20 -d assignment2  # Again, to stop the server, press ctrl-c
 docker run --rm -p 8084:8080  -e MAINIP=10.0.0.20:8080 -d assignment2

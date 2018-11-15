@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"bitbucket.org/cmps128gofour/homework2/handlers"
+	"bitbucket.org/cmps128gofour/homework3/handlers"
 )
 
 func main() {
