@@ -43,7 +43,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 	} else {
-		// Put key into store if it doesn't exists, or replace key
+		// Put key into store if it doesn't exists
 		KVStore.Put(key, value)
 		*replaced = false
 		resp = &response.Response{
@@ -75,6 +75,7 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	var resp *response.Response
 	if KVStore.Exists(key) {
 		value, _ := KVStore.Get(key)
+		log.Printf(value)
 		resp = &response.Response{
 			Result: "Success",
 			Value:  value,
@@ -83,7 +84,7 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	} else {
 		resp = &response.Response{
 			Result: "Error",
-			Msg:    "Not Found",
+			Msg:    "Key does not exist",
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -152,12 +153,13 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 
 		resp = &response.Response{
 			Result: "Success",
+			Msg:    "Key deleted",
 		}
 		w.WriteHeader(http.StatusOK)
 	} else {
 		resp = &response.Response{
 			Result: "Error",
-			Msg:    "Status code 404",
+			Msg:    "Key does not exist",
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}
