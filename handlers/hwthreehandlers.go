@@ -6,7 +6,12 @@ import (
 	"net/http"
 
 	"bitbucket.org/cmps128gofour/homework3/response"
+	"bitbucket.org/cmps128gofour/homework3/vectorclock"
 	"github.com/gorilla/mux"
+)
+
+var (
+	vectorClock = vectorclock.New()
 )
 
 func subjectPUT(w http.ResponseWriter, r *http.Request) {

@@ -20,7 +20,7 @@ var KVStore = store.New()
 
 // Serve creates a server that can be gracefully shutdown,
 // and handles the routes as defined in the homework 1 spec
-func Serve(ip string, port string) {
+func Serve(ipPort string) {
 
 	router := mux.NewRouter()
 	// Add handlers here
@@ -41,7 +41,7 @@ func Serve(ip string, port string) {
 		// Since we're running in docker, we can't bind to localhost (AKA 127.0.0.1)
 		// So we bind to 0.0.0.0 (AKA the global interface) instead
 		// that way we can access it outside the docker container
-		Addr:         fmt.Sprintf("%s:%s", ip, port),
+		Addr:         ipPort,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
