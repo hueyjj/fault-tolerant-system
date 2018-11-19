@@ -252,40 +252,24 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-type deleteMsg struct {
-	IpPort string `json:"ip_port"`
-}
-
 func viewDELETE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	log.Printf("%v+", r)
-	b, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "viewDELETE: Failed to read body", http.StatusInternalServerError)
+		log.Printf("Error reading body: %v", err)
+		http.Error(w, "can't read body", http.StatusBadRequest)
 		return
 	}
-
-	// Unmarshal
-	var msg deleteMsg
-	err = json.Unmarshal(b, &msg)
-	if err != nil {
-		http.Error(w, "viewDELETE: Failed to decode ip port from request", http.StatusInternalServerError)
-		return
-	}
-	log.Printf("%v+", msg)
 
 	// Parse the key from url variable and (store) value from the request
-	ipport := r.PostFormValue("ip_port")
+	//ipport := r.PostFormValue("ip_port") // This doesn't work
+	ipport := strings.Split(string(body), "=")[1]
 	target := -1
 	for index, ip := range iptable {
 		if ip == ipport {
 			target = index
 		}
 	}
-
-	log.Printf("%v", iptable)
 
 	var resp *response.ViewResponse
 	if target != -1 {
