@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -237,6 +238,69 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 			Msg:    fmt.Sprintf("Successfully added %s to view", ipport),
 		}
 		w.WriteHeader(http.StatusOK)
+	}
+
+	// Convert response into json structure and then into bytes
+	data, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	// Send response
+	w.Write(data)
+}
+
+type deleteMsg struct {
+	IpPort string `json:"ip_port"`
+}
+
+func viewDELETE(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	log.Printf("%v+", r)
+	b, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		http.Error(w, "viewDELETE: Failed to read body", http.StatusInternalServerError)
+		return
+	}
+
+	// Unmarshal
+	var msg deleteMsg
+	err = json.Unmarshal(b, &msg)
+	if err != nil {
+		http.Error(w, "viewDELETE: Failed to decode ip port from request", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("%v+", msg)
+
+	// Parse the key from url variable and (store) value from the request
+	ipport := r.PostFormValue("ip_port")
+	target := -1
+	for index, ip := range iptable {
+		if ip == ipport {
+			target = index
+		}
+	}
+
+	log.Printf("%v", iptable)
+
+	var resp *response.ViewResponse
+	if target != -1 {
+		iptable = append(iptable[:target], iptable[target+1:]...)
+		resp = &response.ViewResponse{
+			Result: "Success",
+			Msg:    fmt.Sprintf("Successfully removed %s from view", ipport),
+		}
+		w.WriteHeader(http.StatusOK)
+	} else {
+		resp = &response.ViewResponse{
+			Result: "Error",
+			Msg:    fmt.Sprintf("%s is not in current view", ipport),
+		}
+		w.WriteHeader(http.StatusNotFound)
 	}
 
 	// Convert response into json structure and then into bytes
