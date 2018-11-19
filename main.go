@@ -8,5 +8,7 @@ import (
 
 func main() {
 	ipPort := os.Getenv("IP_PORT")
+	views := os.Getenv("VIEW")
+	handlers.SetViews(views)
 	handlers.Serve(ipPort)
 }

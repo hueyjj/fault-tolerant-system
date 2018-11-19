@@ -32,6 +32,8 @@ func Serve(ipPort string) {
 	router.HandleFunc("/keyValue-store/{subject}", subjectGET).Methods("GET")
 	router.HandleFunc("/keyValue-store/search/{subject}", subjectSEARCH).Methods("GET")
 	router.HandleFunc("/keyValue-store/{subject}", subjectDEL).Methods("DELETE")
+	router.HandleFunc("/view", viewGET).Methods("GET")
+	router.HandleFunc("/view", viewPUT).Methods("PUT")
 
 	// Run a server as defined by Gorilla mux, with graceful shutdown
 	// ref: https://github.com/gorilla/mux#graceful-shutdown
