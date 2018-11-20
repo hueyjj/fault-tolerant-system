@@ -129,6 +129,30 @@ func gossipViewPUT(nodeURL, ipport string, iptable map[string]int) {
 }
 
 func gossipViewDELETE(nodeURL, ipport string, iptable map[string]int) {
+	form := url.Values{}
+	form.Add("ip_port", ipport)
+	data, err := json.Marshal(iptable)
+	if err != nil {
+		log.Printf("Unable to marshal iptable: %v\n", err)
+		return
+	}
+	form.Add("iptable", string(data))
+	//nodeURL = fmt.Sprintf("%s/?ip_port=%s&ip_table=%s", nodeURL, ipport, string(data))
+	log.Printf("nodeURL=%s", nodeURL)
+	req, err := http.NewRequest(http.MethodPost, nodeURL, strings.NewReader(form.Encode()))
+	log.Printf("iptable:string(data)=%s\n", string(data))
+	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+	//req.Header.Add("content-type", "multipart/form-data")
+	if err != nil {
+		log.Printf("Unable to create DELETE request: nodeURL=%s %v\n", nodeURL, err)
+	}
+
+	// Don't care about response here, just do it
+	client := &http.Client{}
+	_, err = client.Do(req)
+	if err != nil {
+		log.Printf("Unable to do DELETE request: %v\n", err)
+	}
 }
 
 func findNextNode(iptable map[string]int) (string, error) {

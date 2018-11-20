@@ -472,16 +472,30 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 
 func viewDELETE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading body: %v", err)
-		http.Error(w, "can't read body", http.StatusBadRequest)
+	//body, err := ioutil.ReadAll(r.Body)
+	//if err != nil {
+	//	log.Printf("Error reading body: %v", err)
+	//	http.Error(w, "can't read body", http.StatusBadRequest)
+	//	return
+	//}
+	//log.Printf("viewDELETE: body=%s", string(body))
+	// Parse the key from url variable and (store) value from the request
+
+	//name := r.PostFormValue("name")
+	//fmt.Fprintf(w, "Hello, %s!", name)
+	ipport := r.PostFormValue("ip_port") // This doesn't work
+	log.Printf("ipport=%s", ipport)
+	if ipport == "" {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Printf("Error reading body: %v", err)
+			http.Error(w, "can't read body", http.StatusBadRequest)
+			return
+		}
+		log.Printf("%s\n", body)
 		return
 	}
-
-	// Parse the key from url variable and (store) value from the request
-	//ipport := r.PostFormValue("ip_port") // This doesn't work
-	ipport := strings.Split(string(body), "=")[1]
+	//ipport := strings.Split(string(body), "=")[1]
 	target := -1
 	for index, ip := range views {
 		if ip == ipport {
@@ -523,7 +537,6 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 			iptable[view] = 0
 		}
 		iptable[myIP] = 1
-		iptable[ipport] = 1
 		nextNodeURL, err := findNextNode(iptable)
 		if err == nil {
 			log.Printf("viewPUT: nextNodeURL=%s", nextNodeURL)
@@ -538,6 +551,8 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 			gossipViewDELETE(nextNodeURL, ipport, iptable)
 		}
 	}
+
+	log.Printf("viewPUT: views: %+v iptable: %+v\n", views, iptable)
 
 	// Convert response into json structure and then into bytes
 	data, err := json.Marshal(resp)
@@ -557,6 +572,19 @@ func unixNow() int64 {
 
 func getBody(body io.ReadCloser) *response.Response {
 	resp := new(response.Response)
+	if err := json.NewDecoder(body).Decode(resp); err != nil {
+		return nil
+	}
+	return resp
+}
+
+type StupidDelNotWorking struct {
+	Ipport  string
+	Iptable map[string]int
+}
+
+func getViewBody(body io.ReadCloser) *StupidDelNotWorking {
+	resp := new(StupidDelNotWorking)
 	if err := json.NewDecoder(body).Decode(resp); err != nil {
 		return nil
 	}
