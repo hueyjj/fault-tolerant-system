@@ -135,10 +135,7 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		*isExists = false
-		vectorClocks[key] = vectorclock.Unit{
-			Tick:      1,
-			Timestamp: unixNow(),
-		}
+		incClock(key)
 		resp = &response.Response{
 			Result:   "Success",
 			IsExists: isExists,
@@ -327,9 +324,23 @@ func getBody(body io.ReadCloser) *response.Response {
 	return resp
 }
 
+func incClock(key string) {
+	if _, ok := vectorClocks[key]; ok {
+		vectorClocks[key] = vectorclock.Unit{
+			Tick:      vectorClocks[key].Tick + 1,
+			Timestamp: vectorClocks[key].Timestamp,
+		}
+	} else {
+		vectorClocks[key] = vectorclock.Unit{
+			Tick:      1,
+			Timestamp: unixNow(),
+		}
+	}
+}
+
 func isGreater(key string, v1, v2 map[string]vectorclock.Unit) bool {
 	v1Val := v1[key].Tick
-	v2Val := v1[key].Tick
+	v2Val := v2[key].Tick
 	if v1Val > v2Val {
 		return true
 	} else if v1Val < v2Val {
@@ -343,21 +354,29 @@ func isGreater(key string, v1, v2 map[string]vectorclock.Unit) bool {
 
 func mergeClock(key string, v1, v2 map[string]vectorclock.Unit) vectorclock.Unit {
 	v1Val := v1[key].Tick
-	v2Val := v1[key].Tick
-	tick := -1
+	v2Val := v2[key].Tick
+	v1Time := v1[key].Timestamp
+	v2Time := v2[key].Timestamp
+	var tick int
+	var timestamp int64
 	if v1Val > v2Val {
 		tick = v1Val + 1
+		timestamp = v1Time
 	} else if v1Val < v2Val {
 		tick = v2Val + 1
+		timestamp = v2Time
 	} else {
-		if v1[key].Timestamp > v2[key].Timestamp {
+		if v1Time > v2Time {
 			tick = v1Val + 1
+			timestamp = v1Time
 		} else {
 			tick = v2Val + 1
+			timestamp = v2Time
 		}
 	}
+	log.Printf("mergeClock: v1.Tick=%d v2.Tick=%d tick=%d time=%d\n", v1Val, v2Val, tick, timestamp)
 	return vectorclock.Unit{
 		Tick:      tick,
-		Timestamp: unixNow(),
+		Timestamp: timestamp,
 	}
 }
