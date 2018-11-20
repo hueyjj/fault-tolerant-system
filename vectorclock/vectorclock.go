@@ -5,6 +5,11 @@ import (
 	"fmt"
 )
 
+type Unit struct {
+	Tick      int
+	Timestamp int64 // Unix timestamp
+}
+
 // VectorClock is a map of the id of a process to it's current clock value
 type VectorClock map[string]int
 

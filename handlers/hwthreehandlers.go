@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"bitbucket.org/cmps128gofour/homework3/response"
 	"bitbucket.org/cmps128gofour/homework3/vectorclock"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	vectorClock = vectorclock.New()
+	vectorClocks = make(map[string]vectorclock.Unit)
 )
 
 func subjectPUT(w http.ResponseWriter, r *http.Request) {
@@ -121,12 +122,22 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 		resp = &response.Response{
 			Result:   "Success",
 			IsExists: isExists,
+			Payload: response.Payload{
+				VectorClocks: vectorClocks,
+			},
 		}
 	} else {
 		*isExists = false
+		vectorClocks[key] = vectorclock.Unit{
+			Tick:      1,
+			Timestamp: unixNow(),
+		}
 		resp = &response.Response{
 			Result:   "Success",
 			IsExists: isExists,
+			Payload: response.Payload{
+				VectorClocks: vectorClocks,
+			},
 		}
 	}
 
@@ -297,4 +308,8 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 
 	// Send response
 	w.Write(data)
+}
+
+func unixNow() int64 {
+	return time.Now().Unix()
 }

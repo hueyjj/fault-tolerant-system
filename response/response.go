@@ -1,5 +1,7 @@
 package response
 
+import "bitbucket.org/cmps128gofour/homework3/vectorclock"
+
 type Response struct {
 	Replaced *bool   `json:"replaced,omitempty"`
 	Msg      string  `json:"msg,omitempty"`
@@ -19,6 +21,6 @@ type IPTableResponse struct {
 }
 
 type Payload struct {
-	VectorClocks map[string]int    `json:"vectorclocks,omitempty"`
-	LookupIPs    map[string]string `json:"lookupips,omitempty"`
+	VectorClocks map[string]vectorclock.Unit `json:"vectorclocks,omitempty"`
+	IPTable      map[string]string           `json:"iptable,omitempty"`
 }
