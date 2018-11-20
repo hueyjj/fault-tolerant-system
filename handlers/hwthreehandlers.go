@@ -226,7 +226,7 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	} else {
-		if msg == nil && !clockExists(key) {
+		if !clockExists(key) {
 			*isExists = false
 			newClock(key) // creates new clock
 			resp = &response.Response{
@@ -237,7 +237,7 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 				},
 			}
 			w.WriteHeader(http.StatusOK)
-		} else if msg == nil && clockExists(key) {
+		} else if len(msg.Payload.VectorClocks) <= 0 {
 			resp = &response.Response{
 				Result: "Error",
 				Msg:    "Payload out of date",
