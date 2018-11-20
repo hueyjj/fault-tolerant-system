@@ -104,7 +104,7 @@ func gossipSubjectDEL() {
 //func gossipViewGET() {
 //}
 
-func gossipViewPUT(nodeURL, ipport string, iptable map[string]bool) {
+func gossipViewPUT(nodeURL, ipport string, iptable map[string]int) {
 	form := url.Values{}
 	form.Add("ip_port", ipport)
 	data, err := json.Marshal(iptable)
@@ -114,6 +114,8 @@ func gossipViewPUT(nodeURL, ipport string, iptable map[string]bool) {
 	}
 	form.Add("iptable", string(data))
 	req, err := http.NewRequest(http.MethodPut, nodeURL, strings.NewReader(form.Encode()))
+	log.Printf("iptable:string(data)=%s\n", string(data))
+	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 	if err != nil {
 		log.Printf("Unable to create PUT request: nodeURL=%s %v\n", nodeURL, err)
 	}
@@ -126,14 +128,13 @@ func gossipViewPUT(nodeURL, ipport string, iptable map[string]bool) {
 	}
 }
 
-func gossipViewDELETE() {
-
+func gossipViewDELETE(nodeURL, ipport string, iptable map[string]int) {
 }
 
-func findNextNode(iptable map[string]bool) (string, error) {
+func findNextNode(iptable map[string]int) (string, error) {
 	nodeURL := ""
 	for key, value := range iptable {
-		if value == false {
+		if value == 0 {
 			nodeURL = key
 		}
 	}

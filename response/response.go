@@ -12,9 +12,9 @@ type Response struct {
 }
 
 type ViewResponse struct {
-	Msg     string          `json:"msg,omitempty"`
-	Result  string          `json:"result,omitempty"`
-	IPTable map[string]bool `json:"iptable,omitempty"`
+	Msg     string         `json:"msg,omitempty"`
+	Result  string         `json:"result,omitempty"`
+	IPTable map[string]int `json:"iptable,omitempty"`
 }
 
 type IPTableResponse struct {
@@ -23,5 +23,5 @@ type IPTableResponse struct {
 
 type Payload struct {
 	VectorClocks map[string]vectorclock.Unit `json:"vectorclocks,omitempty"`
-	IPTable      map[string]bool             `json:"iptable,omitempty"`
+	IPTable      map[string]int              `json:"iptable,omitempty"`
 }

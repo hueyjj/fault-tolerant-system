@@ -396,6 +396,9 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 
 	// Parse the key from url variable and (store) value from the request
 	ipport := r.PostFormValue("ip_port")
+	if ipport == "" {
+		log.Printf("ipport is empty\n")
+	}
 	isIpportExist := false
 	for _, ip := range views {
 		if ip == ipport {
@@ -420,7 +423,7 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	iptableValue := r.PostFormValue("iptable")
-	iptable := make(map[string]bool)
+	iptable := make(map[string]int)
 	if iptableValue != "" {
 		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
 			log.Printf("Unable to unmarshal iptable: %v\n", err)
@@ -429,21 +432,26 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	log.Printf("viewPUT: ipport=%s\n", ipport)
+	log.Printf("viewPUT: len(iptable)=%d\n", len(iptable))
 	if len(iptable) <= 0 {
 		// Start a new gossip
 		for _, view := range views {
-			iptable[view] = false
+			iptable[view] = 0
 		}
-		iptable[myIP] = true
+		iptable[myIP] = 1
+		iptable[ipport] = 1
 		nextNodeURL, err := findNextNode(iptable)
 		if err == nil {
+			log.Printf("viewPUT: nextNodeURL=%s", nextNodeURL)
 			gossipViewPUT(nextNodeURL, ipport, iptable)
 		}
 	} else {
 		// Gossip if there's an ip that hasn't seen the message
-		iptable[myIP] = true
+		iptable[myIP] = 1
 		nextNodeURL, err := findNextNode(iptable)
 		if err == nil {
+			log.Printf("viewPUT: nextNodeURL=%s", nextNodeURL)
 			gossipViewPUT(nextNodeURL, ipport, iptable)
 		}
 	}
@@ -495,6 +503,40 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 			Msg:    fmt.Sprintf("%s is not in current view", ipport),
 		}
 		w.WriteHeader(http.StatusNotFound)
+	}
+
+	iptableValue := r.PostFormValue("iptable")
+	iptable := make(map[string]int)
+	if iptableValue != "" {
+		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
+			log.Printf("Unable to unmarshal iptable: %v\n", err)
+			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	log.Printf("viewPUT: ipport=%s\n", ipport)
+	log.Printf("viewPUT: len(iptable)=%d\n", len(iptable))
+	if len(iptable) <= 0 {
+		// Start a new gossip
+		for _, view := range views {
+			iptable[view] = 0
+		}
+		iptable[myIP] = 1
+		iptable[ipport] = 1
+		nextNodeURL, err := findNextNode(iptable)
+		if err == nil {
+			log.Printf("viewPUT: nextNodeURL=%s", nextNodeURL)
+			gossipViewDELETE(nextNodeURL, ipport, iptable)
+		}
+	} else {
+		// Gossip if there's an ip that hasn't seen the message
+		iptable[myIP] = 1
+		nextNodeURL, err := findNextNode(iptable)
+		if err == nil {
+			log.Printf("viewPUT: nextNodeURL=%s", nextNodeURL)
+			gossipViewDELETE(nextNodeURL, ipport, iptable)
+		}
 	}
 
 	// Convert response into json structure and then into bytes
