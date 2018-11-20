@@ -26,8 +26,14 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 	value := r.PostFormValue("val")
+	payload := r.PostFormValue("payload")
 
-	msg := getBody(r.Body)
+	msg := new(response.Response)
+	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+		log.Printf("Unable to unmarshal payload: %v\n", err)
+		http.Error(w, "Unable to unmarshal payload", http.StatusInternalServerError)
+		return
+	}
 
 	var resp *response.Response
 	replaced := new(bool)
@@ -47,9 +53,9 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	} else if KVStore.Exists(key) {
 		// Replace value in store
-		if isGreater(key, vectorClocks, msg.Payload.VectorClocks) {
+		if isGreaterEqual(key, msg.Payload.VectorClocks, vectorClocks) {
 			KVStore.Put(key, value)
-			incClock(key)
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
 			*replaced = true
 			resp = &response.Response{
 				Replaced: replaced,
@@ -71,9 +77,9 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// Put key into store if it doesn't exists
-		if isGreater(key, vectorClocks, msg.Payload.VectorClocks) {
+		if isGreaterEqual(key, msg.Payload.VectorClocks, vectorClocks) {
 			KVStore.Put(key, value)
-			incClock(key)
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
 			*replaced = false
 			resp = &response.Response{
 				Replaced: replaced,
@@ -113,29 +119,59 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
+	payload := r.PostFormValue("payload")
+
+	msg := new(response.Response)
+	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+		log.Printf("Unable to unmarshal payload: %v\n", err)
+		http.Error(w, "Unable to unmarshal payload", http.StatusInternalServerError)
+		return
+	}
 
 	var resp *response.Response
 	if KVStore.Exists(key) {
-		incClock(key)
-		value, _ := KVStore.Get(key)
-		resp = &response.Response{
-			Result: "Success",
-			Value:  value,
-			Payload: response.Payload{
-				VectorClocks: vectorClocks,
-			},
+		if isGreaterEqual(key, vectorClocks, msg.Payload.VectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+			value, _ := KVStore.Get(key)
+			resp = &response.Response{
+				Result: "Success",
+				Value:  value,
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusOK)
+		} else {
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Payload out of date",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusBadRequest)
 		}
-		w.WriteHeader(http.StatusOK)
 	} else {
-		incClock(key)
-		resp = &response.Response{
-			Result: "Error",
-			Msg:    "Key does not exist",
-			Payload: response.Payload{
-				VectorClocks: vectorClocks,
-			},
+		if isGreaterEqual(key, vectorClocks, msg.Payload.VectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Key does not exist",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Payload out of date",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusBadRequest)
 		}
-		w.WriteHeader(http.StatusNotFound)
 	}
 
 	// Convert response into json structure and then into bytes
@@ -151,36 +187,84 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
-	msg := getBody(r.Body)
-	//if _, ok := msg.Payload.VectorClocks["foo"]; ok {
-	//	log.Printf("%d\n", msg.Payload.VectorClocks["foo"].Tick)
-	//}
+	payload := r.PostFormValue("payload")
+
+	msg := new(response.Response)
+	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+		log.Printf("Unable to unmarshal payload: %v\n", err)
+		http.Error(w, "Unable to unmarshal payload", http.StatusInternalServerError)
+		return
+	}
 
 	var resp *response.Response
 	isExists := new(bool)
 	if KVStore.Exists(key) {
 		*isExists = true
-		vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
-		resp = &response.Response{
-			Result:   "Success",
-			IsExists: isExists,
-			Payload: response.Payload{
-				VectorClocks: vectorClocks,
-			},
+		if isGreaterEqual(key, vectorClocks, msg.Payload.VectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+			resp = &response.Response{
+				Result:   "Success",
+				IsExists: isExists,
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusOK)
+		} else {
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Payload out of date",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	} else {
-		*isExists = false
-		incClock(key)
-		resp = &response.Response{
-			Result:   "Success",
-			IsExists: isExists,
-			Payload: response.Payload{
-				VectorClocks: vectorClocks,
-			},
+		if msg == nil && !clockExists(key) {
+			*isExists = false
+			newClock(key) // creates new clock
+			resp = &response.Response{
+				Result:   "Success",
+				IsExists: isExists,
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusOK)
+		} else if msg == nil && clockExists(key) {
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Payload out of date",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusBadRequest)
+		} else if isGreaterEqual(key, vectorClocks, msg.Payload.VectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+			resp = &response.Response{
+				Result:   "Success",
+				IsExists: isExists,
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusOK)
+		} else {
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Payload out of date",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	}
 
@@ -193,8 +277,6 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
 
@@ -205,25 +287,63 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
+	payload := r.PostFormValue("payload")
+
+	msg := new(response.Response)
+	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+		log.Printf("Unable to unmarshal payload: %v\n", err)
+		http.Error(w, "Unable to unmarshal payload", http.StatusInternalServerError)
+		return
+	}
+
 	var resp *response.Response
 	if KVStore.Exists(key) {
-		err := KVStore.Delete(key)
-		if err != nil {
-			log.Printf("Unable to delete key: %v\n", err)
-			http.Error(w, "Unable to delete key", http.StatusBadRequest)
+		if isGreaterEqual(key, msg.Payload.VectorClocks, vectorClocks) {
+			err := KVStore.Delete(key)
+			if err != nil {
+				log.Printf("Unable to delete key: %v\n", err)
+				http.Error(w, "Unable to delete key", http.StatusBadRequest)
+			}
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+			resp = &response.Response{
+				Result: "Success",
+				Msg:    "Key deleted",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusOK)
+		} else {
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Payload out of date",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusBadRequest)
 		}
-
-		resp = &response.Response{
-			Result: "Success",
-			Msg:    "Key deleted",
-		}
-		w.WriteHeader(http.StatusOK)
 	} else {
-		resp = &response.Response{
-			Result: "Error",
-			Msg:    "Key does not exist",
+		if isGreaterEqual(key, msg.Payload.VectorClocks, vectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Key does not exist",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Payload out of date",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusBadRequest)
 		}
-		w.WriteHeader(http.StatusNotFound)
 	}
 
 	// Convert response into json structure and then into bytes
@@ -359,23 +479,25 @@ func unixNow() int64 {
 
 func getBody(body io.ReadCloser) *response.Response {
 	resp := new(response.Response)
-	json.NewDecoder(body).Decode(resp)
+	if err := json.NewDecoder(body).Decode(resp); err != nil {
+		return nil
+	}
 	return resp
 }
 
-func incClock(key string) {
-	if _, ok := vectorClocks[key]; ok {
-		vectorClocks[key] = vectorclock.Unit{
-			Tick:      vectorClocks[key].Tick + 1,
-			Timestamp: vectorClocks[key].Timestamp,
-		}
-	} else {
-		vectorClocks[key] = vectorclock.Unit{
-			Tick:      1,
-			Timestamp: unixNow(),
-		}
-	}
-}
+//func incClock(key string) {
+//	if _, ok := vectorClocks[key]; ok {
+//		vectorClocks[key] = vectorclock.Unit{
+//			Tick:      vectorClocks[key].Tick + 1,
+//			Timestamp: vectorClocks[key].Timestamp,
+//		}
+//	} else {
+//		vectorClocks[key] = vectorclock.Unit{
+//			Tick:      1,
+//			Timestamp: unixNow(),
+//		}
+//	}
+//}
 
 func newClock(key string) {
 	vectorClocks[key] = vectorclock.Unit{
@@ -384,7 +506,17 @@ func newClock(key string) {
 	}
 }
 
-func isGreater(key string, v1, v2 map[string]vectorclock.Unit) bool {
+func clockExists(key string) bool {
+	if _, ok := vectorClocks[key]; ok {
+		return true
+	}
+	return false
+}
+
+func isGreaterEqual(key string, v1, v2 map[string]vectorclock.Unit) bool {
+	log.Printf("isGreaterEqual: v1[%s].Tick=%d v2[%s].Tick=%d v1[%s].Timestamp=%d v2[%s].Timestamp=%d",
+		key, v1[key].Tick, key, v2[key].Tick, key, v1[key].Timestamp, key, v2[key].Timestamp)
+
 	v1Val := v1[key].Tick
 	v2Val := v2[key].Tick
 	if v1Val > v2Val {
@@ -394,7 +526,10 @@ func isGreater(key string, v1, v2 map[string]vectorclock.Unit) bool {
 	} else {
 		v1Time := v1[key].Timestamp
 		v2Time := v2[key].Timestamp
-		return v1Time > v2Time
+		if v1Time > v2Time || v1Time == v2Time {
+			return true
+		}
+		return false
 	}
 }
 
