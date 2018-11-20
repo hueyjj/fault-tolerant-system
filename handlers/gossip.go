@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -85,7 +86,34 @@ func removeDups(elements []string) (nodups []string) {
 	return
 }
 
-func gossipSubjectPUT() {
+func gossipSubjectPUT(nodeURL, key, value, payload string, iptable map[string]int) {
+	form := url.Values{}
+	form.Add("val", value)
+	data, err := json.Marshal(iptable)
+	if err != nil {
+		log.Printf("Unable to marshal iptable: %v\n", err)
+		return
+	}
+	form.Add("iptable", string(data))
+	form.Add("payload", payload)
+
+	nodeURL = fmt.Sprintf("%s/keyValue-store/%s", nodeURL, key)
+	log.Printf("gossipSubjectPUT: nodeURL=%s", nodeURL)
+
+	req, err := http.NewRequest(http.MethodPut, nodeURL, strings.NewReader(form.Encode()))
+	//log.Printf("iptable:string(data)=%s\n", string(data))
+
+	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+	if err != nil {
+		log.Printf("Unable to create PUT request: nodeURL=%s %v\n", nodeURL, err)
+	}
+
+	// Don't care about response here, just do it
+	client := &http.Client{}
+	_, err = client.Do(req)
+	if err != nil {
+		log.Printf("Unable to do PUT request: %v\n", err)
+	}
 }
 
 func gossipSubjectGET() {
@@ -113,6 +141,7 @@ func gossipViewPUT(nodeURL, ipport string, iptable map[string]int) {
 		return
 	}
 	form.Add("iptable", string(data))
+	nodeURL = fmt.Sprintf("%s/view", nodeURL)
 	req, err := http.NewRequest(http.MethodPut, nodeURL, strings.NewReader(form.Encode()))
 	log.Printf("iptable:string(data)=%s\n", string(data))
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
@@ -138,6 +167,7 @@ func gossipViewDELETE(nodeURL, ipport string, iptable map[string]int) {
 	}
 	form.Add("iptable", string(data))
 	//nodeURL = fmt.Sprintf("%s/?ip_port=%s&ip_table=%s", nodeURL, ipport, string(data))
+	nodeURL = fmt.Sprintf("%s/view", nodeURL)
 	log.Printf("nodeURL=%s", nodeURL)
 	req, err := http.NewRequest(http.MethodPost, nodeURL, strings.NewReader(form.Encode()))
 	log.Printf("iptable:string(data)=%s\n", string(data))
@@ -165,5 +195,5 @@ func findNextNode(iptable map[string]int) (string, error) {
 	if nodeURL == "" {
 		return "", errors.New("Unable to find valid node url")
 	}
-	return "http://" + nodeURL + "/view", nil
+	return "http://" + nodeURL, nil
 }
