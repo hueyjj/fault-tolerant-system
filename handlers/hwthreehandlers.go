@@ -27,6 +27,8 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	key := vars["subject"]
 	value := r.PostFormValue("val")
 
+	msg := getBody(r.Body)
+
 	var resp *response.Response
 	replaced := new(bool)
 	// Return error message if key is 1 and 200 characters
@@ -45,22 +47,52 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	} else if KVStore.Exists(key) {
 		// Replace value in store
-		KVStore.Put(key, value)
-		*replaced = true
-		resp = &response.Response{
-			Replaced: replaced,
-			Msg:      "Updated successfully",
+		if isGreater(key, vectorClocks, msg.Payload.VectorClocks) {
+			KVStore.Put(key, value)
+			incClock(key)
+			*replaced = true
+			resp = &response.Response{
+				Replaced: replaced,
+				Msg:      "Updated successfully",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusOK)
+		} else {
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Payload out of date",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusBadRequest)
 		}
-		w.WriteHeader(http.StatusOK)
 	} else {
 		// Put key into store if it doesn't exists
-		KVStore.Put(key, value)
-		*replaced = false
-		resp = &response.Response{
-			Replaced: replaced,
-			Msg:      "Added successfully",
+		if isGreater(key, vectorClocks, msg.Payload.VectorClocks) {
+			KVStore.Put(key, value)
+			incClock(key)
+			*replaced = false
+			resp = &response.Response{
+				Replaced: replaced,
+				Msg:      "Added successfully",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusCreated)
+		} else {
+			resp = &response.Response{
+				Result: "Error",
+				Msg:    "Payload out of date",
+				Payload: response.Payload{
+					VectorClocks: vectorClocks,
+				},
+			}
+			w.WriteHeader(http.StatusBadRequest)
 		}
-		w.WriteHeader(http.StatusCreated)
 	}
 
 	// Convert response into json structure and then into bytes
@@ -84,17 +116,24 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 
 	var resp *response.Response
 	if KVStore.Exists(key) {
+		incClock(key)
 		value, _ := KVStore.Get(key)
-		log.Printf(value)
 		resp = &response.Response{
 			Result: "Success",
 			Value:  value,
+			Payload: response.Payload{
+				VectorClocks: vectorClocks,
+			},
 		}
 		w.WriteHeader(http.StatusOK)
 	} else {
+		incClock(key)
 		resp = &response.Response{
 			Result: "Error",
 			Msg:    "Key does not exist",
+			Payload: response.Payload{
+				VectorClocks: vectorClocks,
+			},
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -335,6 +374,13 @@ func incClock(key string) {
 			Tick:      1,
 			Timestamp: unixNow(),
 		}
+	}
+}
+
+func newClock(key string) {
+	vectorClocks[key] = vectorclock.Unit{
+		Tick:      1,
+		Timestamp: unixNow(),
 	}
 }
 

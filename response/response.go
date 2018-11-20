@@ -22,5 +22,5 @@ type IPTableResponse struct {
 
 type Payload struct {
 	VectorClocks map[string]vectorclock.Unit `json:"vectorclocks,omitempty"`
-	IPTable      map[string]string           `json:"iptable,omitempty"`
+	IPTable      map[string]bool             `json:"iptable,omitempty"`
 }
