@@ -12,8 +12,9 @@ type Response struct {
 }
 
 type ViewResponse struct {
-	Msg    string `json:"msg,omitempty"`
-	Result string `json:"result,omitempty"`
+	Msg     string          `json:"msg,omitempty"`
+	Result  string          `json:"result,omitempty"`
+	IPTable map[string]bool `json:"iptable,omitempty"`
 }
 
 type IPTableResponse struct {

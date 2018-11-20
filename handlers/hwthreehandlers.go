@@ -358,16 +358,21 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-var iptable []string
+var views []string
+var myIP string
 
-func SetViews(views string) {
-	iptable = strings.Split(views, ",")
+func SetViews(v string) {
+	views = strings.Split(v, ",")
+}
+
+func SetMyIpPort(ip string) {
+	myIP = ip
 }
 
 func viewGET(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	iplist := strings.Join(iptable, ",")
+	iplist := strings.Join(views, ",")
 	var resp *response.IPTableResponse
 	resp = &response.IPTableResponse{
 		View: iplist,
@@ -392,7 +397,7 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 	// Parse the key from url variable and (store) value from the request
 	ipport := r.PostFormValue("ip_port")
 	isIpportExist := false
-	for _, ip := range iptable {
+	for _, ip := range views {
 		if ip == ipport {
 			isIpportExist = true
 		}
@@ -406,13 +411,44 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusNotFound)
 	} else {
-		iptable = append(iptable, ipport)
+		views = append(views, ipport)
 		resp = &response.ViewResponse{
 			Result: "Success",
 			Msg:    fmt.Sprintf("Successfully added %s to view", ipport),
 		}
 		w.WriteHeader(http.StatusOK)
 	}
+
+	iptableValue := r.PostFormValue("iptable")
+	iptable := make(map[string]bool)
+	if iptableValue != "" {
+		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
+			log.Printf("Unable to unmarshal iptable: %v\n", err)
+			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if len(iptable) <= 0 {
+		// Start a new gossip
+		for _, view := range views {
+			iptable[view] = false
+		}
+		iptable[myIP] = true
+		nextNodeURL, err := findNextNode(iptable)
+		if err == nil {
+			gossipViewPUT(nextNodeURL, ipport, iptable)
+		}
+	} else {
+		// Gossip if there's an ip that hasn't seen the message
+		iptable[myIP] = true
+		nextNodeURL, err := findNextNode(iptable)
+		if err == nil {
+			gossipViewPUT(nextNodeURL, ipport, iptable)
+		}
+	}
+
+	log.Printf("viewPUT: views: %+v iptable: %+v\n", views, iptable)
 
 	// Convert response into json structure and then into bytes
 	data, err := json.Marshal(resp)
@@ -439,7 +475,7 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 	//ipport := r.PostFormValue("ip_port") // This doesn't work
 	ipport := strings.Split(string(body), "=")[1]
 	target := -1
-	for index, ip := range iptable {
+	for index, ip := range views {
 		if ip == ipport {
 			target = index
 		}
@@ -447,7 +483,7 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 
 	var resp *response.ViewResponse
 	if target != -1 {
-		iptable = append(iptable[:target], iptable[target+1:]...)
+		views = append(views[:target], views[target+1:]...)
 		resp = &response.ViewResponse{
 			Result: "Success",
 			Msg:    fmt.Sprintf("Successfully removed %s from view", ipport),
