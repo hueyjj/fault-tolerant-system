@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -115,10 +116,16 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
+	msg := getBody(r.Body)
+	//if _, ok := msg.Payload.VectorClocks["foo"]; ok {
+	//	log.Printf("%d\n", msg.Payload.VectorClocks["foo"].Tick)
+	//}
+
 	var resp *response.Response
 	isExists := new(bool)
 	if KVStore.Exists(key) {
 		*isExists = true
+		vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
 		resp = &response.Response{
 			Result:   "Success",
 			IsExists: isExists,
@@ -312,4 +319,45 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 
 func unixNow() int64 {
 	return time.Now().Unix()
+}
+
+func getBody(body io.ReadCloser) *response.Response {
+	resp := new(response.Response)
+	json.NewDecoder(body).Decode(resp)
+	return resp
+}
+
+func isGreater(key string, v1, v2 map[string]vectorclock.Unit) bool {
+	v1Val := v1[key].Tick
+	v2Val := v1[key].Tick
+	if v1Val > v2Val {
+		return true
+	} else if v1Val < v2Val {
+		return false
+	} else {
+		v1Time := v1[key].Timestamp
+		v2Time := v2[key].Timestamp
+		return v1Time > v2Time
+	}
+}
+
+func mergeClock(key string, v1, v2 map[string]vectorclock.Unit) vectorclock.Unit {
+	v1Val := v1[key].Tick
+	v2Val := v1[key].Tick
+	tick := -1
+	if v1Val > v2Val {
+		tick = v1Val + 1
+	} else if v1Val < v2Val {
+		tick = v2Val + 1
+	} else {
+		if v1[key].Timestamp > v2[key].Timestamp {
+			tick = v1Val + 1
+		} else {
+			tick = v2Val + 1
+		}
+	}
+	return vectorclock.Unit{
+		Tick:      tick,
+		Timestamp: unixNow(),
+	}
 }
