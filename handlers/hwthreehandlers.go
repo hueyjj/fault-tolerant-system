@@ -30,8 +30,10 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 
 	msg := new(response.Response)
 	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
-		log.Printf("Unable to unmarshal payload: %v\n", err)
-		http.Error(w, "Unable to unmarshal payload", http.StatusInternalServerError)
+		log.Printf("subjectPUT: Unable to unmarshal payload: %v\n", err)
+		log.Printf("subjectPUT: payload=%+v\n", payload)
+		log.Printf("subjectPUT: r.Body=%+v\n", r.Body)
+		http.Error(w, "subjectPUT: Unable to unmarshal payload", http.StatusInternalServerError)
 		return
 	}
 
@@ -150,16 +152,24 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 
 func subjectGET(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	log.Printf("subjectGET: GET request received\n")
 
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
 	payload := r.PostFormValue("payload")
+	if payload == "" {
+		r.ParseForm()
+		payload = r.Form.Get("payload")
+		log.Printf("subjectGET: payload=%s\n", payload)
+	}
 
 	msg := new(response.Response)
 	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
-		log.Printf("Unable to unmarshal payload: %v\n", err)
-		http.Error(w, "Unable to unmarshal payload", http.StatusInternalServerError)
+		log.Printf("subjectGET: Unable to unmarshal payload: %v\n", err)
+		log.Printf("subjectGET: payload=%+v\n", payload)
+		log.Printf("subjectGET: r.Body=%+v\n", r.Body)
+		http.Error(w, "subjectGET: Unable to unmarshal payload", http.StatusInternalServerError)
 		return
 	}
 
@@ -209,6 +219,42 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	iptableValue := r.PostFormValue("iptable")
+	iptable := make(map[string]int)
+	if iptableValue != "" {
+		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
+			log.Printf("Unable to unmarshal iptable: %v\n", err)
+			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	log.Printf("subjectGET: len(iptable)=%d\n", len(iptable))
+	if len(iptable) <= 0 {
+		// Start a new gossip
+		for _, view := range views {
+			iptable[view] = 0
+		}
+		iptable[myIP] = 1
+		nextNodeURL, err := findNextNode(iptable)
+		if err == nil {
+			log.Printf("subjectGET: nextNodeURL=%s", nextNodeURL)
+			gossipSubjectGET(nextNodeURL, key, payload, iptable)
+		}
+	} else {
+		// Gossip if there's an ip that hasn't seen the message
+		iptable[myIP] = 1
+		nextNodeURL, err := findNextNode(iptable)
+		if err == nil {
+			log.Printf("subjectGET: nextNodeURL=%s", nextNodeURL)
+			gossipSubjectGET(nextNodeURL, key, payload, iptable)
+		}
+	}
+
+	log.Printf("subjectGET: views: %+v iptable: %+v\n", views, iptable)
+	log.Printf("subjectGET: vectorClocks=%+v\n", vectorClocks)
+	log.Printf("subjectGET: store=%+v\n", KVStore)
+
 	// Convert response into json structure and then into bytes
 	data, err := json.Marshal(resp)
 	if err != nil {
@@ -231,8 +277,9 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 
 	msg := new(response.Response)
 	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
-		log.Printf("Unable to unmarshal payload: %v\n", err)
-		http.Error(w, "Unable to unmarshal payload", http.StatusInternalServerError)
+		log.Printf("subjectSEARCH: Unable to unmarshal payload: %v\n", err)
+		log.Printf("subjectSEARCH: payload=%+v\n", payload)
+		http.Error(w, "subjectSEARCH: Unable to unmarshal payload", http.StatusInternalServerError)
 		return
 	}
 
@@ -326,8 +373,9 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 
 	msg := new(response.Response)
 	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
-		log.Printf("Unable to unmarshal payload: %v\n", err)
-		http.Error(w, "Unable to unmarshal payload", http.StatusInternalServerError)
+		log.Printf("subjectDEL: Unable to unmarshal payload: %v\n", err)
+		log.Printf("subjectDEL: payload=%+v\n", payload)
+		http.Error(w, "subjectDEL: Unable to unmarshal payload", http.StatusInternalServerError)
 		return
 	}
 
