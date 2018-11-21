@@ -1,7 +1,4 @@
-jajeng: wrote get and post handler for Hello
-joahenri: wrote post handler for test, wrote code to instantiate server, wrote all of dockerfile, wrote unit tests
-mmart114: helped write get handler for test, wrote unit tests, wrote documentation for API
-smesparz: worked on get handler for test
-
-jajeng: helped write search, get, put, del, and proxy handlers. Update dockerfile. 
-mmart114: CO-piloted in a little of everything: helped write store.go, helped write response.go, helped write proxySubjectDel method, helped write case when primary fails.
+joahenri: wrote the vector packages and help with the handler logic
+jajeng: worked with mmart114 and smesparz on implementing clocks, payloads, responses, and data replication
+mmart114: worked with jajeng and smesparz on implementing clocks, payloads, responses, and data replication
+smesparz: worked with mmart114 and jajeng on implementing clocks, payloads, responses, and data replication
