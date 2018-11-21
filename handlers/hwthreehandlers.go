@@ -33,8 +33,8 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		log.Printf("subjectPUT: Unable to unmarshal payload: %v\n", err)
 		log.Printf("subjectPUT: payload=%+v\n", payload)
 		log.Printf("subjectPUT: r.Body=%+v\n", r.Body)
-		http.Error(w, "subjectPUT: Unable to unmarshal payload", http.StatusInternalServerError)
-		return
+		//http.Error(w, "subjectPUT: Unable to unmarshal payload", http.StatusInternalServerError)
+		//return
 	}
 
 	var resp *response.Response
@@ -66,7 +66,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 					VectorClocks: vectorClocks,
 				},
 			}
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusCreated)
 		} else {
 			resp = &response.Response{
 				Result: "Error",
@@ -90,7 +90,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 					VectorClocks: vectorClocks,
 				},
 			}
-			w.WriteHeader(http.StatusCreated)
+			w.WriteHeader(http.StatusOK)
 		} else {
 			resp = &response.Response{
 				Result: "Error",
@@ -108,8 +108,8 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	if iptableValue != "" {
 		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
 			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			return
+			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			//return
 		}
 	}
 
@@ -142,8 +142,8 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
-		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
-		return
+		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		//return
 	}
 
 	// Send response
@@ -169,8 +169,8 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 		log.Printf("subjectGET: Unable to unmarshal payload: %v\n", err)
 		log.Printf("subjectGET: payload=%+v\n", payload)
 		log.Printf("subjectGET: r.Body=%+v\n", r.Body)
-		http.Error(w, "subjectGET: Unable to unmarshal payload", http.StatusInternalServerError)
-		return
+		//http.Error(w, "subjectGET: Unable to unmarshal payload", http.StatusInternalServerError)
+		//return
 	}
 
 	var resp *response.Response
@@ -224,8 +224,8 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	if iptableValue != "" {
 		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
 			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			return
+			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			//return
 		}
 	}
 
@@ -259,8 +259,8 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
-		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
-		return
+		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		//return
 	}
 
 	// Send response
@@ -279,8 +279,8 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
 		log.Printf("subjectSEARCH: Unable to unmarshal payload: %v\n", err)
 		log.Printf("subjectSEARCH: payload=%+v\n", payload)
-		http.Error(w, "subjectSEARCH: Unable to unmarshal payload", http.StatusInternalServerError)
-		return
+		//http.Error(w, "subjectSEARCH: Unable to unmarshal payload", http.StatusInternalServerError)
+		//return
 	}
 
 	var resp *response.Response
@@ -355,8 +355,8 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	if iptableValue != "" {
 		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
 			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			return
+			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			//return
 		}
 	}
 
@@ -390,8 +390,8 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
-		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
-		return
+		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		//return
 	}
 
 	// Send response
@@ -411,8 +411,8 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
 		log.Printf("subjectDEL: Unable to unmarshal payload: %v\n", err)
 		log.Printf("subjectDEL: payload=%+v\n", payload)
-		http.Error(w, "subjectDEL: Unable to unmarshal payload", http.StatusInternalServerError)
-		return
+		//http.Error(w, "subjectDEL: Unable to unmarshal payload", http.StatusInternalServerError)
+		//return
 	}
 
 	var resp *response.Response
@@ -470,8 +470,8 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	if iptableValue != "" {
 		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
 			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			return
+			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			//return
 		}
 	}
 
@@ -505,8 +505,8 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
-		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
-		return
+		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		//return
 	}
 
 	// Send response
@@ -538,8 +538,8 @@ func viewGET(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
-		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
-		return
+		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		//return
 	}
 
 	// Send response
@@ -582,8 +582,8 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 	if iptableValue != "" {
 		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
 			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			return
+			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			//return
 		}
 	}
 
@@ -619,8 +619,8 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
-		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
-		return
+		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		//return
 	}
 
 	// Send response
@@ -646,11 +646,11 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("Error reading body: %v", err)
-			http.Error(w, "can't read body", http.StatusBadRequest)
-			return
+			//http.Error(w, "can't read body", http.StatusBadRequest)
+			//return
 		}
-		log.Printf("%s\n", body)
-		return
+		//log.Printf("%s\n", body)
+		//return
 	}
 	//ipport := strings.Split(string(body), "=")[1]
 	target := -1
@@ -681,8 +681,8 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 	if iptableValue != "" {
 		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
 			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			return
+			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			//return
 		}
 	}
 
@@ -715,8 +715,8 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
-		http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
-		return
+		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
+		//return
 	}
 
 	// Send response
@@ -732,8 +732,8 @@ func viewUPDATE(w http.ResponseWriter, r *http.Request) {
 		log.Printf("viewUPDATE: Unable to unmarshal payload: %v\n", err)
 		log.Printf("viewUPDATE: payload=%+v\n", payload)
 		log.Printf("viewUPDATE: r.Body=%+v\n", r.Body)
-		http.Error(w, "viewUPDATE: Unable to unmarshal payload", http.StatusInternalServerError)
-		return
+		//http.Error(w, "viewUPDATE: Unable to unmarshal payload", http.StatusInternalServerError)
+		//return
 	}
 
 	log.Printf("%+v\n", msg)
@@ -747,8 +747,8 @@ func viewUPDATE(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(thankyou)
 	if err != nil {
 		log.Printf("viewUPDATE: Unable to marshal response: %v\n", err)
-		http.Error(w, "viewUPDATE: Unable to marshal response", http.StatusInternalServerError)
-		return
+		//http.Error(w, "viewUPDATE: Unable to marshal response", http.StatusInternalServerError)
+		//return
 	}
 	w.Write(data)
 }
