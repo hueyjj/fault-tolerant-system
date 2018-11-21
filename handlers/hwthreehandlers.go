@@ -455,8 +455,6 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
-	//payload := r.PostFormValue("payload")
-
 	data := r.PostFormValue("payload")
 
 	payload := new(response.Payload)
@@ -616,9 +614,19 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Parse the key from url variable and (store) value from the request
-	ipport := r.PostFormValue("ip_port")
+	ipport := r.PostFormValue("ip_port") // This doesn't work
+	log.Printf("ipport=%s", ipport)
 	if ipport == "" {
-		log.Printf("ipport is empty\n")
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Printf("Error reading body: %v", err)
+			//http.Error(w, "can't read body", http.StatusBadRequest)
+			//return
+		}
+		ipport = strings.Split(string(body), "=")[1]
+		ipport = strings.Replace(ipport, "%3A", ":", -1)
+		log.Printf("ipport=%s\n", ipport)
+		//return
 	}
 	isIpportExist := false
 	for _, ip := range views {
@@ -715,7 +723,9 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 			//http.Error(w, "can't read body", http.StatusBadRequest)
 			//return
 		}
-		log.Printf("%s\n", body)
+		ipport = strings.Split(string(body), "=")[1]
+		ipport = strings.Replace(ipport, "%3A", ":", -1)
+		log.Printf("ipport=%s\n", ipport)
 		//return
 	}
 	//ipport := strings.Split(string(body), "=")[1]
