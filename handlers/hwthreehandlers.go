@@ -455,6 +455,7 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
+	r.Header.Add("content-type", "application/x-www-form-urlencoded")
 	data := r.PostFormValue("payload")
 
 	payload := new(response.Payload)
@@ -813,6 +814,9 @@ func viewUPDATE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("%+v\n", msg)
+
+	vectorClocks = msg.VectorClocks
+	KVStore.KeyvalMap = msg.KVS
 
 	thankyou := struct {
 		Msg string
