@@ -830,6 +830,7 @@ func viewUPDATE(w http.ResponseWriter, r *http.Request) {
 		//http.Error(w, "viewUPDATE: Unable to marshal response", http.StatusInternalServerError)
 		//return
 	}
+	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
 
