@@ -28,14 +28,25 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	value := r.PostFormValue("val")
 	payload := r.PostFormValue("payload")
 
-	msg := new(response.Response)
+	var msg response.Payload
 	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
 		log.Printf("subjectPUT: Unable to unmarshal payload: %v\n", err)
 		log.Printf("subjectPUT: payload=%+v\n", payload)
 		log.Printf("subjectPUT: r.Body=%+v\n", r.Body)
-		//http.Error(w, "subjectPUT: Unable to unmarshal payload", http.StatusInternalServerError)
-		//return
 	}
+
+	//msg := new(response.Response)
+	//if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+	//	log.Printf("subjectPUT: Unable to unmarshal payload: %v\n", err)
+	//	log.Printf("subjectPUT: payload=%+v\n", payload)
+	//	log.Printf("subjectPUT: r.Body=%+v\n", r.Body)
+	//	//http.Error(w, "subjectPUT: Unable to unmarshal payload", http.StatusInternalServerError)
+	//	//return
+	//	if payload := r.PostFormValue("vectorclocks"); payload != "" {
+	//		msg = getBody(r.Body)
+	//		log.Printf("subjectPUT: Attempt to parse entire body instead: %+v\n", msg)
+	//	}
+	//}
 
 	var resp *response.Response
 	replaced := new(bool)
@@ -55,9 +66,9 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	} else if KVStore.Exists(key) {
 		// Replace value in store
-		if isGreaterEqual(key, msg.Payload.VectorClocks, vectorClocks) {
+		if isGreaterEqual(key, msg.VectorClocks, vectorClocks) {
 			KVStore.Put(key, value)
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.VectorClocks)
 			*replaced = true
 			resp = &response.Response{
 				Replaced: replaced,
@@ -79,9 +90,9 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// Put key into store if it doesn't exists
-		if isGreaterEqual(key, msg.Payload.VectorClocks, vectorClocks) {
+		if isGreaterEqual(key, msg.VectorClocks, vectorClocks) {
 			KVStore.Put(key, value)
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+			vectorClocks[key] = mergeClock(key, vectorClocks, msg.VectorClocks)
 			*replaced = false
 			resp = &response.Response{
 				Replaced: replaced,
@@ -103,15 +114,16 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	iptableValue := r.PostFormValue("iptable")
-	iptable := make(map[string]int)
-	if iptableValue != "" {
-		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
-			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			//return
-		}
-	}
+	iptable := msg.IPTable
+	//iptableValue := r.PostFormValue("iptable")
+	//iptable := make(map[string]int)
+	//if iptableValue != "" {
+	//	if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
+	//		log.Printf("Unable to unmarshal iptable: %v\n", err)
+	//		//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+	//		//return
+	//	}
+	//}
 
 	log.Printf("subjectPUT: len(iptable)=%d\n", len(iptable))
 	if len(iptable) <= 0 {
@@ -649,7 +661,7 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 			//http.Error(w, "can't read body", http.StatusBadRequest)
 			//return
 		}
-		//log.Printf("%s\n", body)
+		log.Printf("%s\n", body)
 		//return
 	}
 	//ipport := strings.Split(string(body), "=")[1]
