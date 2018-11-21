@@ -26,13 +26,20 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 	value := r.PostFormValue("val")
-	payload := r.PostFormValue("payload")
+	data := r.PostFormValue("payload")
 
-	var msg response.Payload
-	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
-		log.Printf("subjectPUT: Unable to unmarshal payload: %v\n", err)
-		log.Printf("subjectPUT: payload=%+v\n", payload)
-		log.Printf("subjectPUT: r.Body=%+v\n", r.Body)
+	payload := new(response.Payload)
+	payload.VectorClocks = make(map[string]vectorclock.Unit)
+	payload.IPTable = make(map[string]int)
+	if data != "" {
+		log.Printf("subjectPUT: data=%+v\n", data)
+		if err := json.Unmarshal([]byte(data), &payload); err != nil {
+			log.Printf("subjectPUT: Unable to unmarshal payload: %v\n", err)
+			log.Printf("subjectPUT: payload=%+v\n", payload)
+			log.Printf("subjectPUT: r.Body=%+v\n", r.Body)
+		}
+	} else {
+		log.Printf("subjectPUT: payload is empty")
 	}
 
 	//msg := new(response.Response)
@@ -66,9 +73,9 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	} else if KVStore.Exists(key) {
 		// Replace value in store
-		if isGreaterEqual(key, msg.VectorClocks, vectorClocks) {
+		if isGreaterEqual(key, payload.VectorClocks, vectorClocks) {
 			KVStore.Put(key, value)
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.VectorClocks)
+			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			*replaced = true
 			resp = &response.Response{
 				Replaced: replaced,
@@ -90,9 +97,9 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// Put key into store if it doesn't exists
-		if isGreaterEqual(key, msg.VectorClocks, vectorClocks) {
+		if isGreaterEqual(key, payload.VectorClocks, vectorClocks) {
 			KVStore.Put(key, value)
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.VectorClocks)
+			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			*replaced = false
 			resp = &response.Response{
 				Replaced: replaced,
@@ -114,7 +121,6 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	iptable := msg.IPTable
 	//iptableValue := r.PostFormValue("iptable")
 	//iptable := make(map[string]int)
 	//if iptableValue != "" {
@@ -125,33 +131,33 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	//	}
 	//}
 
-	log.Printf("subjectPUT: len(iptable)=%d\n", len(iptable))
-	if len(iptable) <= 0 {
+	log.Printf("subjectPUT: len(iptable)=%d\n", len(payload.IPTable))
+	if len(payload.IPTable) <= 0 {
 		// Start a new gossip
 		for _, view := range views {
-			iptable[view] = 0
+			payload.IPTable[view] = 0
 		}
-		iptable[myIP] = 1
-		nextNodeURL, err := findNextNode(iptable)
+		payload.IPTable[myIP] = 1
+		nextNodeURL, err := findNextNode(payload.IPTable)
 		if err == nil {
 			log.Printf("subjectPUT: nextNodeURL=%s", nextNodeURL)
-			gossipSubjectPUT(nextNodeURL, key, value, payload, iptable)
+			gossipSubjectPUT(nextNodeURL, key, value, payload)
 		}
 	} else {
 		// Gossip if there's an ip that hasn't seen the message
-		iptable[myIP] = 1
-		nextNodeURL, err := findNextNode(iptable)
+		payload.IPTable[myIP] = 1
+		nextNodeURL, err := findNextNode(payload.IPTable)
 		if err == nil {
 			log.Printf("subjectPUT: nextNodeURL=%s", nextNodeURL)
-			gossipSubjectPUT(nextNodeURL, key, value, payload, iptable)
+			gossipSubjectPUT(nextNodeURL, key, value, payload)
 		}
 	}
 
-	log.Printf("subjectPUT: views: %+v iptable: %+v\n", views, iptable)
+	log.Printf("subjectPUT: views: %+v iptable: %+v\n", views, payload.IPTable)
 	log.Printf("subjectPUT: vectorClocks=%+v\n", vectorClocks)
 	log.Printf("subjectPUT: store=%+v\n", KVStore)
 	// Convert response into json structure and then into bytes
-	data, err := json.Marshal(resp)
+	dataResp, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
 		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
@@ -159,7 +165,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send response
-	w.Write(data)
+	w.Write(dataResp)
 }
 
 func subjectGET(w http.ResponseWriter, r *http.Request) {
@@ -169,26 +175,42 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
-	payload := r.PostFormValue("payload")
-	if payload == "" {
-		r.ParseForm()
-		payload = r.Form.Get("payload")
-		log.Printf("subjectGET: payload=%s\n", payload)
+	//payload := r.PostFormValue("payload")
+	//if payload == "" {
+	//	r.ParseForm()
+	//	payload = r.Form.Get("payload")
+	//	log.Printf("subjectGET: payload=%s\n", payload)
+	//}
+
+	data := r.PostFormValue("payload")
+
+	payload := new(response.Payload)
+	payload.VectorClocks = make(map[string]vectorclock.Unit)
+	payload.IPTable = make(map[string]int)
+	if data != "" {
+		log.Printf("subjectPUT: data=%+v\n", data)
+		if err := json.Unmarshal([]byte(data), &payload); err != nil {
+			log.Printf("subjectPUT: Unable to unmarshal payload: %v\n", err)
+			log.Printf("subjectPUT: payload=%+v\n", payload)
+			log.Printf("subjectPUT: r.Body=%+v\n", r.Body)
+		}
+	} else {
+		log.Printf("subjectPUT: payload is empty")
 	}
 
-	msg := new(response.Response)
-	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
-		log.Printf("subjectGET: Unable to unmarshal payload: %v\n", err)
-		log.Printf("subjectGET: payload=%+v\n", payload)
-		log.Printf("subjectGET: r.Body=%+v\n", r.Body)
-		//http.Error(w, "subjectGET: Unable to unmarshal payload", http.StatusInternalServerError)
-		//return
-	}
+	//msg := new(response.Response)
+	//if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+	//	log.Printf("subjectGET: Unable to unmarshal payload: %v\n", err)
+	//	log.Printf("subjectGET: payload=%+v\n", payload)
+	//	log.Printf("subjectGET: r.Body=%+v\n", r.Body)
+	//	//http.Error(w, "subjectGET: Unable to unmarshal payload", http.StatusInternalServerError)
+	//	//return
+	//}
 
 	var resp *response.Response
 	if KVStore.Exists(key) {
-		if isGreaterEqual(key, vectorClocks, msg.Payload.VectorClocks) {
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+		if isGreaterEqual(key, vectorClocks, payload.VectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			value, _ := KVStore.Get(key)
 			resp = &response.Response{
 				Result: "Success",
@@ -209,8 +231,8 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	} else {
-		if isGreaterEqual(key, vectorClocks, msg.Payload.VectorClocks) {
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+		if isGreaterEqual(key, vectorClocks, payload.VectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			resp = &response.Response{
 				Result: "Error",
 				Msg:    "Key does not exist",
@@ -231,44 +253,44 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	iptableValue := r.PostFormValue("iptable")
-	iptable := make(map[string]int)
-	if iptableValue != "" {
-		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
-			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			//return
-		}
-	}
+	//iptableValue := r.PostFormValue("iptable")
+	//iptable := make(map[string]int)
+	//if iptableValue != "" {
+	//	if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
+	//		log.Printf("Unable to unmarshal iptable: %v\n", err)
+	//		//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+	//		//return
+	//	}
+	//}
 
-	log.Printf("subjectGET: len(iptable)=%d\n", len(iptable))
-	if len(iptable) <= 0 {
+	log.Printf("subjectGET: len(iptable)=%d\n", len(payload.IPTable))
+	if len(payload.IPTable) <= 0 {
 		// Start a new gossip
 		for _, view := range views {
-			iptable[view] = 0
+			payload.IPTable[view] = 0
 		}
-		iptable[myIP] = 1
-		nextNodeURL, err := findNextNode(iptable)
+		payload.IPTable[myIP] = 1
+		nextNodeURL, err := findNextNode(payload.IPTable)
 		if err == nil {
 			log.Printf("subjectGET: nextNodeURL=%s", nextNodeURL)
-			gossipSubjectGET(nextNodeURL, key, payload, iptable)
+			gossipSubjectGET(nextNodeURL, key, payload)
 		}
 	} else {
 		// Gossip if there's an ip that hasn't seen the message
-		iptable[myIP] = 1
-		nextNodeURL, err := findNextNode(iptable)
+		payload.IPTable[myIP] = 1
+		nextNodeURL, err := findNextNode(payload.IPTable)
 		if err == nil {
 			log.Printf("subjectGET: nextNodeURL=%s", nextNodeURL)
-			gossipSubjectGET(nextNodeURL, key, payload, iptable)
+			gossipSubjectGET(nextNodeURL, key, payload)
 		}
 	}
 
-	log.Printf("subjectGET: views: %+v iptable: %+v\n", views, iptable)
+	log.Printf("subjectGET: views: %+v iptable: %+v\n", views, payload.IPTable)
 	log.Printf("subjectGET: vectorClocks=%+v\n", vectorClocks)
 	log.Printf("subjectGET: store=%+v\n", KVStore)
 
 	// Convert response into json structure and then into bytes
-	data, err := json.Marshal(resp)
+	dataResp, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
 		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
@@ -276,7 +298,7 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send response
-	w.Write(data)
+	w.Write(dataResp)
 }
 
 func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
@@ -285,22 +307,38 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
-	payload := r.PostFormValue("payload")
+	//payload := r.PostFormValue("payload")
 
-	msg := new(response.Response)
-	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
-		log.Printf("subjectSEARCH: Unable to unmarshal payload: %v\n", err)
-		log.Printf("subjectSEARCH: payload=%+v\n", payload)
-		//http.Error(w, "subjectSEARCH: Unable to unmarshal payload", http.StatusInternalServerError)
-		//return
+	data := r.PostFormValue("payload")
+
+	payload := new(response.Payload)
+	payload.VectorClocks = make(map[string]vectorclock.Unit)
+	payload.IPTable = make(map[string]int)
+	if data != "" {
+		log.Printf("subjectPUT: data=%+v\n", data)
+		if err := json.Unmarshal([]byte(data), &payload); err != nil {
+			log.Printf("subjectPUT: Unable to unmarshal payload: %v\n", err)
+			log.Printf("subjectPUT: payload=%+v\n", payload)
+			log.Printf("subjectPUT: r.Body=%+v\n", r.Body)
+		}
+	} else {
+		log.Printf("subjectPUT: payload is empty")
 	}
+
+	//msg := new(response.Response)
+	//if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+	//	log.Printf("subjectSEARCH: Unable to unmarshal payload: %v\n", err)
+	//	log.Printf("subjectSEARCH: payload=%+v\n", payload)
+	//	//http.Error(w, "subjectSEARCH: Unable to unmarshal payload", http.StatusInternalServerError)
+	//	//return
+	//}
 
 	var resp *response.Response
 	isExists := new(bool)
 	if KVStore.Exists(key) {
 		*isExists = true
-		if isGreaterEqual(key, vectorClocks, msg.Payload.VectorClocks) {
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+		if isGreaterEqual(key, vectorClocks, payload.VectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			resp = &response.Response{
 				Result:   "Success",
 				IsExists: isExists,
@@ -331,7 +369,7 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 				},
 			}
 			w.WriteHeader(http.StatusOK)
-		} else if len(msg.Payload.VectorClocks) <= 0 {
+		} else if len(payload.VectorClocks) <= 0 {
 			resp = &response.Response{
 				Result: "Error",
 				Msg:    "Payload out of date",
@@ -340,8 +378,8 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 				},
 			}
 			w.WriteHeader(http.StatusBadRequest)
-		} else if isGreaterEqual(key, vectorClocks, msg.Payload.VectorClocks) {
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+		} else if isGreaterEqual(key, vectorClocks, payload.VectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			resp = &response.Response{
 				Result:   "Success",
 				IsExists: isExists,
@@ -362,44 +400,44 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	iptableValue := r.PostFormValue("iptable")
-	iptable := make(map[string]int)
-	if iptableValue != "" {
-		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
-			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			//return
-		}
-	}
+	//iptableValue := r.PostFormValue("iptable")
+	//iptable := make(map[string]int)
+	//if iptableValue != "" {
+	//	if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
+	//		log.Printf("Unable to unmarshal iptable: %v\n", err)
+	//		//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+	//		//return
+	//	}
+	//}
 
-	log.Printf("subjectSEARCH: len(iptable)=%d\n", len(iptable))
-	if len(iptable) <= 0 {
+	log.Printf("subjectSEARCH: len(iptable)=%d\n", len(payload.IPTable))
+	if len(payload.IPTable) <= 0 {
 		// Start a new gossip
 		for _, view := range views {
-			iptable[view] = 0
+			payload.IPTable[view] = 0
 		}
-		iptable[myIP] = 1
-		nextNodeURL, err := findNextNode(iptable)
+		payload.IPTable[myIP] = 1
+		nextNodeURL, err := findNextNode(payload.IPTable)
 		if err == nil {
 			log.Printf("subjectSEARCH: nextNodeURL=%s", nextNodeURL)
-			gossipSubjectSEARCH(nextNodeURL, key, payload, iptable)
+			gossipSubjectSEARCH(nextNodeURL, key, payload)
 		}
 	} else {
 		// Gossip if there's an ip that hasn't seen the message
-		iptable[myIP] = 1
-		nextNodeURL, err := findNextNode(iptable)
+		payload.IPTable[myIP] = 1
+		nextNodeURL, err := findNextNode(payload.IPTable)
 		if err == nil {
 			log.Printf("subjectSEARCH: nextNodeURL=%s", nextNodeURL)
-			gossipSubjectSEARCH(nextNodeURL, key, payload, iptable)
+			gossipSubjectSEARCH(nextNodeURL, key, payload)
 		}
 	}
 
-	log.Printf("subjectSEARCH: views: %+v iptable: %+v\n", views, iptable)
+	log.Printf("subjectSEARCH: views: %+v iptable: %+v\n", views, payload.IPTable)
 	log.Printf("subjectSEARCH: vectorClocks=%+v\n", vectorClocks)
 	log.Printf("subjectSEARCH: store=%+v\n", KVStore)
 
 	// Convert response into json structure and then into bytes
-	data, err := json.Marshal(resp)
+	dataResp, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
 		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
@@ -407,7 +445,7 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send response
-	w.Write(data)
+	w.Write(dataResp)
 }
 
 func subjectDEL(w http.ResponseWriter, r *http.Request) {
@@ -417,25 +455,41 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
-	payload := r.PostFormValue("payload")
+	//payload := r.PostFormValue("payload")
 
-	msg := new(response.Response)
-	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
-		log.Printf("subjectDEL: Unable to unmarshal payload: %v\n", err)
-		log.Printf("subjectDEL: payload=%+v\n", payload)
-		//http.Error(w, "subjectDEL: Unable to unmarshal payload", http.StatusInternalServerError)
-		//return
+	data := r.PostFormValue("payload")
+
+	payload := new(response.Payload)
+	payload.VectorClocks = make(map[string]vectorclock.Unit)
+	payload.IPTable = make(map[string]int)
+	if data != "" {
+		log.Printf("subjectPUT: data=%+v\n", data)
+		if err := json.Unmarshal([]byte(data), &payload); err != nil {
+			log.Printf("subjectPUT: Unable to unmarshal payload: %v\n", err)
+			log.Printf("subjectPUT: payload=%+v\n", payload)
+			log.Printf("subjectPUT: r.Body=%+v\n", r.Body)
+		}
+	} else {
+		log.Printf("subjectPUT: payload is empty")
 	}
+
+	//msg := new(response.Response)
+	//if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+	//	log.Printf("subjectDEL: Unable to unmarshal payload: %v\n", err)
+	//	log.Printf("subjectDEL: payload=%+v\n", payload)
+	//	//http.Error(w, "subjectDEL: Unable to unmarshal payload", http.StatusInternalServerError)
+	//	//return
+	//}
 
 	var resp *response.Response
 	if KVStore.Exists(key) {
-		if isGreaterEqual(key, msg.Payload.VectorClocks, vectorClocks) {
+		if isGreaterEqual(key, payload.VectorClocks, vectorClocks) {
 			err := KVStore.Delete(key)
 			if err != nil {
 				log.Printf("Unable to delete key: %v\n", err)
 				http.Error(w, "Unable to delete key", http.StatusBadRequest)
 			}
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			resp = &response.Response{
 				Result: "Success",
 				Msg:    "Key deleted",
@@ -455,8 +509,8 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	} else {
-		if isGreaterEqual(key, msg.Payload.VectorClocks, vectorClocks) {
-			vectorClocks[key] = mergeClock(key, vectorClocks, msg.Payload.VectorClocks)
+		if isGreaterEqual(key, payload.VectorClocks, vectorClocks) {
+			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			resp = &response.Response{
 				Result: "Error",
 				Msg:    "Key does not exist",
@@ -477,44 +531,44 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	iptableValue := r.PostFormValue("iptable")
-	iptable := make(map[string]int)
-	if iptableValue != "" {
-		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
-			log.Printf("Unable to unmarshal iptable: %v\n", err)
-			//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
-			//return
-		}
-	}
+	//iptableValue := r.PostFormValue("iptable")
+	//iptable := make(map[string]int)
+	//if iptableValue != "" {
+	//	if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
+	//		log.Printf("Unable to unmarshal iptable: %v\n", err)
+	//		//http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+	//		//return
+	//	}
+	//}
 
-	log.Printf("subjectDEL: len(iptable)=%d\n", len(iptable))
-	if len(iptable) <= 0 {
+	log.Printf("subjectDEL: len(iptable)=%d\n", len(payload.IPTable))
+	if len(payload.IPTable) <= 0 {
 		// Start a new gossip
 		for _, view := range views {
-			iptable[view] = 0
+			payload.IPTable[view] = 0
 		}
-		iptable[myIP] = 1
-		nextNodeURL, err := findNextNode(iptable)
+		payload.IPTable[myIP] = 1
+		nextNodeURL, err := findNextNode(payload.IPTable)
 		if err == nil {
 			log.Printf("subjectDEL: nextNodeURL=%s", nextNodeURL)
-			gossipSubjectDEL(nextNodeURL, key, payload, iptable)
+			gossipSubjectDEL(nextNodeURL, key, payload)
 		}
 	} else {
 		// Gossip if there's an ip that hasn't seen the message
-		iptable[myIP] = 1
-		nextNodeURL, err := findNextNode(iptable)
+		payload.IPTable[myIP] = 1
+		nextNodeURL, err := findNextNode(payload.IPTable)
 		if err == nil {
 			log.Printf("subjectDEL: nextNodeURL=%s", nextNodeURL)
-			gossipSubjectDEL(nextNodeURL, key, payload, iptable)
+			gossipSubjectDEL(nextNodeURL, key, payload)
 		}
 	}
 
-	log.Printf("subjectDEL: views: %+v iptable: %+v\n", views, iptable)
+	log.Printf("subjectDEL: views: %+v iptable: %+v\n", views, payload.IPTable)
 	log.Printf("subjectDEL: vectorClocks=%+v\n", vectorClocks)
 	log.Printf("subjectDEL: store=%+v\n", KVStore)
 
 	// Convert response into json structure and then into bytes
-	data, err := json.Marshal(resp)
+	dataResp, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Unable to marshal response: %v\n", err)
 		//http.Error(w, "Unable to marshal response", http.StatusInternalServerError)
@@ -522,7 +576,7 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send response
-	w.Write(data)
+	w.Write(dataResp)
 }
 
 var views []string

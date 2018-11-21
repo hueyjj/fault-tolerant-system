@@ -122,16 +122,15 @@ func updateNode(nodeURL string, vectorClocks map[string]vectorclock.Unit, kvs *s
 	}
 }
 
-func gossipSubjectPUT(nodeURL, key, value, payload string, iptable map[string]int) {
+func gossipSubjectPUT(nodeURL, key, value string, payload *response.Payload) {
 	form := url.Values{}
 	form.Add("val", value)
-	data, err := json.Marshal(iptable)
+	data, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("Unable to marshal iptable: %v\n", err)
+		log.Printf("Unable to marshal payload: %v\n", err)
 		return
 	}
-	form.Add("iptable", string(data))
-	form.Add("payload", payload)
+	form.Add("payload", string(data))
 
 	nodeURL = fmt.Sprintf("%s/keyValue-store/%s", nodeURL, key)
 	log.Printf("gossipSubjectPUT: nodeURL=%s", nodeURL)
@@ -152,15 +151,14 @@ func gossipSubjectPUT(nodeURL, key, value, payload string, iptable map[string]in
 	}
 }
 
-func gossipSubjectGET(nodeURL, key, payload string, iptable map[string]int) {
+func gossipSubjectGET(nodeURL, key string, payload *response.Payload) {
 	form := url.Values{}
-	data, err := json.Marshal(iptable)
+	data, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("Unable to marshal iptable: %v\n", err)
 		return
 	}
-	form.Add("iptable", string(data))
-	form.Add("payload", payload)
+	form.Add("payload", string(data))
 
 	nodeURL = fmt.Sprintf("%s/hackedroute/%s", nodeURL, key)
 	log.Printf("gossipSubjectGET: nodeURL=%s", nodeURL)
@@ -181,15 +179,14 @@ func gossipSubjectGET(nodeURL, key, payload string, iptable map[string]int) {
 	}
 }
 
-func gossipSubjectSEARCH(nodeURL, key, payload string, iptable map[string]int) {
+func gossipSubjectSEARCH(nodeURL, key string, payload *response.Payload) {
 	form := url.Values{}
-	data, err := json.Marshal(iptable)
+	data, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("Unable to marshal iptable: %v\n", err)
 		return
 	}
-	form.Add("iptable", string(data))
-	form.Add("payload", payload)
+	form.Add("payload", string(data))
 
 	nodeURL = fmt.Sprintf("%s/whatevenisthisroute/%s", nodeURL, key)
 	log.Printf("gossipSubjectSEARCH: nodeURL=%s", nodeURL)
@@ -210,15 +207,14 @@ func gossipSubjectSEARCH(nodeURL, key, payload string, iptable map[string]int) {
 	}
 }
 
-func gossipSubjectDEL(nodeURL, key, payload string, iptable map[string]int) {
+func gossipSubjectDEL(nodeURL, key string, payload *response.Payload) {
 	form := url.Values{}
-	data, err := json.Marshal(iptable)
+	data, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("Unable to marshal iptable: %v\n", err)
 		return
 	}
-	form.Add("iptable", string(data))
-	form.Add("payload", payload)
+	form.Add("payload", string(data))
 
 	nodeURL = fmt.Sprintf("%s/keyValue-store/%s", nodeURL, key)
 	log.Printf("gossipSubjectDEL: nodeURL=%s", nodeURL)
