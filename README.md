@@ -33,9 +33,8 @@ docker build -t cmps128gofour/homework3 .
 # If built with go
 ./homework3 # To stop the server, press ctrl-c
 # if built with docker
-docker run --rm -p 8083:8080  --ip=10.0.0.20 -d assignment3  # Again, to stop the server, press ctrl-c
-docker run --rm -p 8084:8080  -e MAINIP=10.0.0.20:8080 -d assignment3
-docker run --rm -p 8085:8080  -e MAINIP=10.0.0.20:8080 -d assignment3
+docker run -p 8082:8080 -e VIEW="176.32.164.10:8082,176.32.164.10:8083" -e IP_PORT="176.32.164.10:8082" testing
+docker run -p 8083:8080 -e VIEW="176.32.164.10:8082,176.32.164.10:8083" -e IP_PORT="176.32.164.10:8083" testing
 ```
 
 ## Testing the output of the server
