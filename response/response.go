@@ -25,3 +25,8 @@ type Payload struct {
 	VectorClocks map[string]vectorclock.Unit `json:"vectorclocks,omitempty"`
 	IPTable      map[string]int              `json:"iptable,omitempty"`
 }
+
+type Update struct {
+	VectorClocks map[string]vectorclock.Unit `json:"vectorclocks,omitempty"`
+	KVS          map[string]string           `json:"kvs,omitempty"`
+}

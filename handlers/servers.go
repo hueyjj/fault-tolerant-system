@@ -39,6 +39,7 @@ func Serve(ipPort string) {
 	router.HandleFunc("/view", viewPUT).Methods("PUT")
 	router.HandleFunc("/view", viewDELETE).Methods("DELETE")
 	router.HandleFunc("/view", viewDELETE).Methods("POST")
+	router.HandleFunc("/view/update", viewUPDATE).Methods("POST")
 
 	// Run a server as defined by Gorilla mux, with graceful shutdown
 	// ref: https://github.com/gorilla/mux#graceful-shutdown

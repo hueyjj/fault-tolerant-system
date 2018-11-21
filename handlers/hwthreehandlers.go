@@ -601,6 +601,8 @@ func viewPUT(w http.ResponseWriter, r *http.Request) {
 			log.Printf("viewPUT: nextNodeURL=%s", nextNodeURL)
 			gossipViewPUT(nextNodeURL, ipport, iptable)
 		}
+		// Update new node to latest KVS and vectorclocks with this node
+		updateNode(ipport, vectorClocks, KVStore)
 	} else {
 		// Gossip if there's an ip that hasn't seen the message
 		iptable[myIP] = 1
@@ -718,6 +720,36 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send response
+	w.Write(data)
+}
+
+func viewUPDATE(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	payload := r.PostFormValue("payload")
+	msg := new(response.Update)
+	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+		log.Printf("viewUPDATE: Unable to unmarshal payload: %v\n", err)
+		log.Printf("viewUPDATE: payload=%+v\n", payload)
+		log.Printf("viewUPDATE: r.Body=%+v\n", r.Body)
+		http.Error(w, "viewUPDATE: Unable to unmarshal payload", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("%+v\n", msg)
+
+	thankyou := struct {
+		Msg string
+	}{
+		Msg: "Thank you, I have received the update",
+	}
+
+	data, err := json.Marshal(thankyou)
+	if err != nil {
+		log.Printf("viewUPDATE: Unable to marshal response: %v\n", err)
+		http.Error(w, "viewUPDATE: Unable to marshal response", http.StatusInternalServerError)
+		return
+	}
 	w.Write(data)
 }
 

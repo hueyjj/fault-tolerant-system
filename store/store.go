@@ -5,25 +5,25 @@ import (
 )
 
 type Store struct {
-	keyvalMap map[string]string
+	KeyvalMap map[string]string
 }
 
 func New() *Store {
 	return &Store{
-		keyvalMap: make(map[string]string),
+		KeyvalMap: make(map[string]string),
 	}
 }
 
 // Put places val into key, and returns true
 // if the value was replaced
 func (s *Store) Put(key, val string) bool {
-	_, exists := s.keyvalMap[key]
-	s.keyvalMap[key] = val
+	_, exists := s.KeyvalMap[key]
+	s.KeyvalMap[key] = val
 	return exists
 }
 
 func (s *Store) Exists(key string) bool {
-	_, exists := s.keyvalMap[key]
+	_, exists := s.KeyvalMap[key]
 	if !exists {
 		return false
 	}
@@ -31,7 +31,7 @@ func (s *Store) Exists(key string) bool {
 }
 
 func (s *Store) Get(key string) (string, error) {
-	val, exists := s.keyvalMap[key]
+	val, exists := s.KeyvalMap[key]
 	if !exists {
 		return "", fmt.Errorf("key %s does not exit in the map", key)
 	}
@@ -39,14 +39,14 @@ func (s *Store) Get(key string) (string, error) {
 }
 
 func (s *Store) Delete(key string) error {
-	_, exists := s.keyvalMap[key]
+	_, exists := s.KeyvalMap[key]
 	if !exists {
 		return fmt.Errorf("key %s does not exist in the map", key)
 	}
-	delete(s.keyvalMap, key)
+	delete(s.KeyvalMap, key)
 	return nil
 }
 
 func (s *Store) Count() int {
-	return len(s.keyvalMap)
+	return len(s.KeyvalMap)
 }

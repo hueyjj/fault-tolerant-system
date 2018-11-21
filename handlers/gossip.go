@@ -10,6 +10,10 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"bitbucket.org/cmps128gofour/homework3/response"
+	"bitbucket.org/cmps128gofour/homework3/store"
+	"bitbucket.org/cmps128gofour/homework3/vectorclock"
 )
 
 const replicationFactor int = 2
@@ -84,6 +88,38 @@ func removeDups(elements []string) (nodups []string) {
 		}
 	}
 	return
+}
+
+func updateNode(nodeURL string, vectorClocks map[string]vectorclock.Unit, kvs *store.Store) {
+	updatePayload := &response.Update{
+		VectorClocks: vectorClocks,
+		KVS:          kvs.KeyvalMap,
+	}
+
+	data, err := json.Marshal(updatePayload)
+	if err != nil {
+		log.Printf("Unable to marshal iptable: %v\n", err)
+		return
+	}
+
+	form := url.Values{}
+	form.Add("payload", string(data))
+
+	nodeURL = fmt.Sprintf("http://%s/view/update", nodeURL)
+	log.Printf("updateNODE: nodeURL=%s", nodeURL)
+
+	req, err := http.NewRequest(http.MethodPost, nodeURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		log.Printf("Unable to create POST (update) request: nodeURL=%s %v\n", nodeURL, err)
+	}
+	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+
+	// Don't care about response here, just do it
+	client := &http.Client{}
+	_, err = client.Do(req)
+	if err != nil {
+		log.Printf("Unable to do POST (update) request: %v\n", err)
+	}
 }
 
 func gossipSubjectPUT(nodeURL, key, value, payload string, iptable map[string]int) {
