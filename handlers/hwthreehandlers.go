@@ -350,6 +350,42 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	iptableValue := r.PostFormValue("iptable")
+	iptable := make(map[string]int)
+	if iptableValue != "" {
+		if err := json.Unmarshal([]byte(iptableValue), &iptable); err != nil {
+			log.Printf("Unable to unmarshal iptable: %v\n", err)
+			http.Error(w, "Unable to unmarshal iptable", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	log.Printf("subjectSEARCH: len(iptable)=%d\n", len(iptable))
+	if len(iptable) <= 0 {
+		// Start a new gossip
+		for _, view := range views {
+			iptable[view] = 0
+		}
+		iptable[myIP] = 1
+		nextNodeURL, err := findNextNode(iptable)
+		if err == nil {
+			log.Printf("subjectSEARCH: nextNodeURL=%s", nextNodeURL)
+			gossipSubjectSEARCH(nextNodeURL, key, payload, iptable)
+		}
+	} else {
+		// Gossip if there's an ip that hasn't seen the message
+		iptable[myIP] = 1
+		nextNodeURL, err := findNextNode(iptable)
+		if err == nil {
+			log.Printf("subjectSEARCH: nextNodeURL=%s", nextNodeURL)
+			gossipSubjectSEARCH(nextNodeURL, key, payload, iptable)
+		}
+	}
+
+	log.Printf("subjectSEARCH: views: %+v iptable: %+v\n", views, iptable)
+	log.Printf("subjectSEARCH: vectorClocks=%+v\n", vectorClocks)
+	log.Printf("subjectSEARCH: store=%+v\n", KVStore)
+
 	// Convert response into json structure and then into bytes
 	data, err := json.Marshal(resp)
 	if err != nil {

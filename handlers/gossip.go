@@ -145,8 +145,33 @@ func gossipSubjectGET(nodeURL, key, payload string, iptable map[string]int) {
 	}
 }
 
-func gossipSubjectSEARCH() {
+func gossipSubjectSEARCH(nodeURL, key, payload string, iptable map[string]int) {
+	form := url.Values{}
+	data, err := json.Marshal(iptable)
+	if err != nil {
+		log.Printf("Unable to marshal iptable: %v\n", err)
+		return
+	}
+	form.Add("iptable", string(data))
+	form.Add("payload", payload)
 
+	nodeURL = fmt.Sprintf("%s/whatevenisthisroute/%s", nodeURL, key)
+	log.Printf("gossipSubjectSEARCH: nodeURL=%s", nodeURL)
+
+	req, err := http.NewRequest(http.MethodPost, nodeURL, strings.NewReader(form.Encode()))
+	//log.Printf("iptable:string(data)=%s\n", string(data))
+
+	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+	if err != nil {
+		log.Printf("Unable to create GET (search) request: nodeURL=%s %v\n", nodeURL, err)
+	}
+
+	// Don't care about response here, just do it
+	client := &http.Client{}
+	_, err = client.Do(req)
+	if err != nil {
+		log.Printf("Unable to do GET (search) request: %v\n", err)
+	}
 }
 
 func gossipSubjectDEL(nodeURL, key, payload string, iptable map[string]int) {

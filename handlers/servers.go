@@ -32,6 +32,7 @@ func Serve(ipPort string) {
 	router.HandleFunc("/keyValue-store/{subject}", subjectGET).Methods("GET")
 	router.HandleFunc("/hackedroute/{subject}", subjectGET).Methods("POST")
 	router.HandleFunc("/keyValue-store/search/{subject}", subjectSEARCH).Methods("GET")
+	router.HandleFunc("/whatevenisthisroute/{subject}", subjectSEARCH).Methods("POST")
 	router.HandleFunc("/keyValue-store/{subject}", subjectDEL).Methods("DELETE")
 	router.HandleFunc("/keyValue-store/{subject}", subjectDEL).Methods("POST")
 	router.HandleFunc("/view", viewGET).Methods("GET")
