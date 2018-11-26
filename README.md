@@ -33,8 +33,9 @@ docker build -t cmps128gofour/homework4 .
 # If built with go
 ./homework4 # To stop the server, press ctrl-c
 # if built with docker
-docker run -p 8082:8080 -e VIEW="176.32.164.10:8082,176.32.164.10:8083" -e IP_PORT="176.32.164.10:8082" testing
-docker run -p 8083:8080 -e VIEW="176.32.164.10:8082,176.32.164.10:8083" -e IP_PORT="176.32.164.10:8083" testing
+docker run -p LocalPort:ExposedPort --net=YourNetwork --ip=DockerNetworkIP -e VIEW="YourComputer'sIP:LocalPort,..." -e IP_PORT="YourComputer'sIP:LocalPort" -e K=“NumberOfShards” imageTag
+
+docker run --rm -p 8082:8080 --net=mynetwork --ip=192.168.0.2 -e VIEW="192.168.0.2:8080,192.168.0.3:8080,192.168.0.4:8080,192.168.0.5:8080" -e IP_PORT="192.168.0.2:8080" -e S=”2” testing
 ```
 
 ## Testing the output of the server
