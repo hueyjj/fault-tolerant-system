@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	clientResponse "bitbucket.org/cmps128gofour/homework3/response"
+	clientResponse "bitbucket.org/cmps128gofour/homework4/response"
 	"github.com/gorilla/mux"
 )
 

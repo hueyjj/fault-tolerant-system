@@ -1,6 +1,6 @@
 package response
 
-import "bitbucket.org/cmps128gofour/homework3/vectorclock"
+import "bitbucket.org/cmps128gofour/homework4/vectorclock"
 
 type Response struct {
 	Replaced *bool   `json:"replaced,omitempty"`

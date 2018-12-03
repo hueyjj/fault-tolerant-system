@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"bitbucket.org/cmps128gofour/homework3/response"
-	"bitbucket.org/cmps128gofour/homework3/store"
-	"bitbucket.org/cmps128gofour/homework3/vectorclock"
+	"bitbucket.org/cmps128gofour/homework4/response"
+	"bitbucket.org/cmps128gofour/homework4/store"
+	"bitbucket.org/cmps128gofour/homework4/vectorclock"
 )
 
 const replicationFactor int = 2
