@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -138,6 +139,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 			payload.IPTable[view] = 0
 		}
 		payload.IPTable[myIP] = 1
+
 		nextNodeURL, err := findNextNode(payload.IPTable)
 		if err == nil {
 			log.Printf("subjectPUT: nextNodeURL=%s", nextNodeURL)
@@ -934,4 +936,94 @@ func mergeClock(key string, v1, v2 map[string]vectorclock.Unit) vectorclock.Unit
 		Tick:      tick,
 		Timestamp: timestamp,
 	}
+}
+
+// Checks if a key (hashed) belongs in a node
+//func keyBelongsInNode(key, ip string) bool {
+//	// Hash key to get shard id
+//	shardID := hashhere()
+//	for _, nodeIP := range placeHolderMap[shardID] {
+//		if nodeIP == myIP {
+//			return true
+//		}
+//	}
+//	return false
+//}
+
+func shardGET(w http.ResponseWriter, r *http.Request) {
+	myShardID := -1
+	for shardID, nodes := range placeHolderMap {
+		for _, node := range nodes {
+			if myIP == node {
+				myShardID = shardID
+				// Could break early here?
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	var resp *response.ShardResponse
+	resp = &response.ShardResponse{
+		ID: myShardID,
+	}
+	w.WriteHeader(http.StatusOK)
+
+	dataResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+	}
+	w.Write(dataResp)
+}
+
+func shardAllGET(w http.ResponseWriter, r *http.Request) {
+	var shardIDs []string
+	for shardID := range placeHolderMap {
+		shardIDs = append(shardIDs, strconv.Itoa(shardID))
+	}
+	allShardIDs := strings.Join(shardIDS, ",")
+	var resp *response.ShardResponse
+	resp = &response.ShardResponse{
+		Result:   "Success",
+		ShardIds: allShardIDs,
+	}
+	w.WriteHeader(http.StatusOK)
+
+	dataResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+	}
+	w.Write(dataResp)
+}
+
+func shardMemberGet(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	shardID := vars["id"]
+
+	var resp *response.ShardResponse
+	if val, ok := placeHolderMap[shardID]; ok {
+		members := strings.Join(placeHolderMap[shardID], ",")
+		resp = &response.ShardResponse{
+			Result:  "Success",
+			Members: members,
+		}
+		w.WriteHeader(http.StatusOK)
+	} else {
+		resp = &response.ShardResponse{
+			Result: "Error",
+			Msg:    fmt.Sprintf("No shard with id %s", shardID),
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}
+
+	dataResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+	}
+	w.Write(dataResp)
+}
+
+func shardCountGET(w http.ResponseWriter, r *http.Request) {
+}
+
+func shardChangePUT(w http.ResponseWriter, r *http.Request) {
 }

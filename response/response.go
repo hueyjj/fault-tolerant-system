@@ -17,6 +17,15 @@ type ViewResponse struct {
 	IPTable map[string]int `json:"iptable,omitempty"`
 }
 
+type ShardResponse struct {
+	ID       int    `json:"id,omitempty"`
+	Result   string `json:"result,omitempty"`
+	ShardIDs string `json:"shard_ids,omitempty"`
+	Members  string `json:"members,omitempty"`
+	Count    string `json:"Count,omitempty"`
+	Msg      string `json:"msg,omitempty"`
+}
+
 type IPTableResponse struct {
 	View string `json:"view",omitempty`
 }

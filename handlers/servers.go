@@ -40,6 +40,11 @@ func Serve(ipPort string) {
 	router.HandleFunc("/view", viewDELETE).Methods("DELETE")
 	router.HandleFunc("/view", viewDELETE).Methods("POST")
 	router.HandleFunc("/view/update", viewUPDATE).Methods("POST")
+	router.HandleFunc("/shard/my_id", shardGET).Methods("GET")
+	router.HandleFunc("/shard/all_ids", shardAllGET).Methods("GET")
+	router.HandleFunc("/shard/members/{id}", shardMemberGET).Methods("GET")
+	router.HandleFunc("/shard/count/{id}", shardCountGET).Methods("GET")
+	router.HandleFunc("/shard/changeShardNumber", shardChangePUT).Methods("PUT")
 
 	// Run a server as defined by Gorilla mux, with graceful shutdown
 	// ref: https://github.com/gorilla/mux#graceful-shutdown
