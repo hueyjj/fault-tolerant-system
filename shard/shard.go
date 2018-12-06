@@ -58,13 +58,13 @@ func Shard(views []string, S int) (map[int][]string, error) {
 
 	// If we have more shards than nodes
 	// then make one big shard and return
-	if S >= len(views) {
-		idToShards[0] = []string{}
-		for _, view := range views {
-			idToShards[0] = append(idToShards[0], view)
-		}
-		return idToShards, nil
-	}
+	//if S >= len(views) {
+	//	idToShards[0] = []string{}
+	//	for _, view := range views {
+	//		idToShards[0] = append(idToShards[0], view)
+	//	}
+	//	return idToShards, nil
+	//}
 
 	// Otherwise, Insert S shards into map
 	for i := 0; i < S; i++ {
@@ -89,11 +89,11 @@ func Shard(views []string, S int) (map[int][]string, error) {
 		index = (index + S + 1) % S
 	}
 
-	err := FixLonelyNodes(idToShards)
+	//err := FixLonelyNodes(idToShards)
 
-	if err != nil {
-		return nil, err
-	}
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return idToShards, nil
 }
@@ -153,7 +153,11 @@ func GetShardID(iptable map[int][]string, key string) int {
 	// use the keys to make a hash ring
 	ring := hashring.New(keys)
 	// Hash the key, and find the shard it corr. to
-	node, _ := ring.GetNode(key)
+	node, ok := ring.GetNode(key)
+	if !ok {
+		return -1
+	}
+
 	// convert the string node to an int
 	shardID, _ := strconv.Atoi(node)
 

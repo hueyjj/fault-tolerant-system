@@ -216,9 +216,11 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 		if isGreaterEqual(key, vectorClocks, payload.VectorClocks) {
 			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			value, _ := KVStore.Get(key)
+			owner := shard.GetShardID(shardMap, key)
 			resp = &response.Response{
 				Result: "Success",
 				Value:  value,
+				Owner:  owner,
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -343,9 +345,11 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 		*isExists = true
 		if isGreaterEqual(key, vectorClocks, payload.VectorClocks) {
 			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
+			owner := shard.GetShardID(shardMap, key)
 			resp = &response.Response{
 				Result:   "Success",
 				IsExists: isExists,
+				Owner:    owner,
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -585,15 +589,16 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 var views []string
 var myIP string
 var shardMap map[int][]string
+var numShard int
 
 func GetShardMap() map[int][]string {
 	return shardMap
 }
 
 func SetShardMap(s string, v string) {
-
 	myViews := strings.Split(v, ",")
 	sInt, _ := strconv.Atoi(s)
+	numShard = sInt
 	shardMap, _ = shard.Shard(myViews, sInt)
 }
 
@@ -956,7 +961,7 @@ func mergeClock(key string, v1, v2 map[string]vectorclock.Unit) vectorclock.Unit
 //func keyBelongsInNode(key, ip string) bool {
 //	// Hash key to get shard id
 //	shardID := hashhere()
-//	for _, nodeIP := range placeHolderMap[shardID] {
+//	for _, nodeIP := range shardMap[shardID] {
 //		if nodeIP == myIP {
 //			return true
 //		}
@@ -966,7 +971,7 @@ func mergeClock(key string, v1, v2 map[string]vectorclock.Unit) vectorclock.Unit
 
 func shardGET(w http.ResponseWriter, r *http.Request) {
 	myShardID := -1
-	for shardID, nodes := range placeHolderMap {
+	for shardID, nodes := range shardMap {
 		for _, node := range nodes {
 			if myIP == node {
 				myShardID = shardID
@@ -991,14 +996,14 @@ func shardGET(w http.ResponseWriter, r *http.Request) {
 
 func shardAllGET(w http.ResponseWriter, r *http.Request) {
 	var shardIDs []string
-	for shardID := range placeHolderMap {
+	for shardID := range shardMap {
 		shardIDs = append(shardIDs, strconv.Itoa(shardID))
 	}
-	allShardIDs := strings.Join(shardIDS, ",")
+	allShardIDs := strings.Join(shardIDs, ",")
 	var resp *response.ShardResponse
 	resp = &response.ShardResponse{
 		Result:   "Success",
-		ShardIds: allShardIDs,
+		ShardIDs: allShardIDs,
 	}
 	w.WriteHeader(http.StatusOK)
 
@@ -1009,13 +1014,16 @@ func shardAllGET(w http.ResponseWriter, r *http.Request) {
 	w.Write(dataResp)
 }
 
-func shardMemberGet(w http.ResponseWriter, r *http.Request) {
+func shardMemberGET(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	shardID := vars["id"]
+	shardID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		fmt.Println("Unable to convert shardID (string) to int")
+	}
 
 	var resp *response.ShardResponse
-	if val, ok := placeHolderMap[shardID]; ok {
-		members := strings.Join(placeHolderMap[shardID], ",")
+	if val, ok := shardMap[shardID]; ok {
+		members := strings.Join(val, ",")
 		resp = &response.ShardResponse{
 			Result:  "Success",
 			Members: members,
@@ -1037,7 +1045,79 @@ func shardMemberGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func shardCountGET(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	shardID, err := strconv.Atoi(vars["id"])
+
+	var resp *response.ShardResponse
+	if _, ok := shardMap[shardID]; ok {
+		count := 0
+		for key := range KVStore.KeyvalMap {
+			if shard.GetShardID(shardMap, key) >= 0 {
+				count++
+			}
+		}
+		resp = &response.ShardResponse{
+			Result: "Success",
+			Count:  count,
+		}
+		w.WriteHeader(http.StatusOK)
+	} else {
+		resp = &response.ShardResponse{
+			Result: "Error",
+			Msg:    fmt.Sprintf("No shard with id %d", shardID),
+		}
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	dataResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+	}
+	w.Write(dataResp)
 }
 
 func shardChangePUT(w http.ResponseWriter, r *http.Request) {
+	num, _ := strconv.Atoi(r.PostFormValue("num"))
+
+	var resp *response.ShardResponse
+	if num > len(views) {
+		resp = &response.ShardResponse{
+			Result: "Error",
+			Msg:    fmt.Sprintf("Not enough nodes for %d shards", num),
+		}
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	lonleyNodeFound := false
+	tempMap, _ := shard.Shard(views, num)
+	var shardIDs []string
+	for shardID, val := range tempMap {
+		if len(val) == 1 {
+			lonleyNodeFound = true
+		}
+		shardIDs = append(shardIDs, strconv.Itoa(shardID))
+	}
+	allShardIDs := strings.Join(shardIDs, ",")
+
+	if lonleyNodeFound {
+		resp = &response.ShardResponse{
+			Result: "Error",
+			Msg:    fmt.Sprintf("Not enough nodes. %d shards result in a nonfault tolerant shard", num),
+		}
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		shardMap = tempMap
+		numShard = num
+		resp = &response.ShardResponse{
+			Result:   "Success",
+			ShardIDs: allShardIDs,
+		}
+		w.WriteHeader(http.StatusOK)
+	}
+
+	dataResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Unable to marshal response: %v\n", err)
+	}
+	w.Write(dataResp)
 }
