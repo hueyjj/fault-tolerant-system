@@ -7,8 +7,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
+
+	"bitbucket.org/cmps128gofour/homework4/shard"
 
 	"bitbucket.org/cmps128gofour/homework4/response"
 	"bitbucket.org/cmps128gofour/homework4/vectorclock"
@@ -580,6 +583,18 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 
 var views []string
 var myIP string
+var shardMap map[int][]string
+
+func GetShardMap() map[int][]string {
+	return shardMap
+}
+
+func SetShardMap(s string, v string) {
+
+	myViews := strings.Split(v, ",")
+	sInt, _ := strconv.Atoi(s)
+	shardMap, _ = shard.Shard(myViews, sInt)
+}
 
 func SetViews(v string) {
 	views = strings.Split(v, ",")
