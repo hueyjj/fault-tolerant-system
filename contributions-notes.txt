@@ -1,4 +1,4 @@
-joahenri: wrote the vector packages and help with the handler logic
-jajeng: worked with mmart114 and smesparz on implementing clocks, payloads, responses, and data replication
-mmart114: worked with jajeng and smesparz on implementing clocks, payloads, responses, and data replication
-smesparz: worked with mmart114 and jajeng on implementing clocks, payloads, responses, and data replication
+joahenri: implemented sharding, consistent hashing, enabled sharding route, and upheld guarantees from older assignments
+jajeng: implemented sharding, consistent hashing, enabled sharding route, and upheld guarantees from older assignments
+mmart114:implemented sharding, consistent hashing, enabled sharding route, and upheld guarantees from older assignments
+smesparz: helped refactor homework3 handlers for homework4

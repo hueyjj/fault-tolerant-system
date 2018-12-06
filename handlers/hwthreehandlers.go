@@ -22,6 +22,12 @@ var (
 	vectorClocks = make(map[string]vectorclock.Unit)
 )
 
+func pingGET(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("hello"))
+}
+
 func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -30,6 +36,32 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 	key := vars["subject"]
 	value := r.PostFormValue("val")
 	data := r.PostFormValue("payload")
+
+	// Check if shard is up
+	oneIsUp := false
+	sID := shard.GetShardID(shardMap, key)
+	for _, node := range shardMap[sID] {
+		if areYouUp(node) {
+			oneIsUp = true
+		}
+	}
+	if !oneIsUp {
+		var resp *response.Response
+		resp = &response.Response{
+			Result: "Error",
+			Msg:    fmt.Sprintf("Unable to access key: %s", key),
+			Payload: response.Payload{
+				VectorClocks: vectorClocks,
+			},
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		r, err := json.Marshal(resp)
+		if err != nil {
+			log.Printf("Unable to marshal response: %v\n", err)
+		}
+		w.Write(r)
+		return
+	}
 
 	payload := new(response.Payload)
 	payload.VectorClocks = make(map[string]vectorclock.Unit)
@@ -91,7 +123,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		} else {
 			resp = &response.Response{
 				Result: "Error",
-				Msg:    "Payload out of date",
+				Msg:    "Unable to serve request and maintain causal consistency",
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -115,7 +147,7 @@ func subjectPUT(w http.ResponseWriter, r *http.Request) {
 		} else {
 			resp = &response.Response{
 				Result: "Error",
-				Msg:    "Payload out of date",
+				Msg:    "Unable to serve request and maintain causal consistency",
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -179,6 +211,32 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 	// Parse the key from url variable and (store) value from the request
 	vars := mux.Vars(r)
 	key := vars["subject"]
+
+	// Check if shard is up
+	oneIsUp := false
+	sID := shard.GetShardID(shardMap, key)
+	for _, node := range shardMap[sID] {
+		if areYouUp(node) {
+			oneIsUp = true
+		}
+	}
+	if !oneIsUp {
+		var resp *response.Response
+		resp = &response.Response{
+			Result: "Error",
+			Msg:    fmt.Sprintf("Unable to access key: %s", key),
+			Payload: response.Payload{
+				VectorClocks: vectorClocks,
+			},
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		r, err := json.Marshal(resp)
+		if err != nil {
+			log.Printf("Unable to marshal response: %v\n", err)
+		}
+		w.Write(r)
+		return
+	}
 	//payload := r.PostFormValue("payload")
 	//if payload == "" {
 	//	r.ParseForm()
@@ -230,7 +288,7 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 		} else {
 			resp = &response.Response{
 				Result: "Error",
-				Msg:    "Payload out of date",
+				Msg:    "Unable to serve request and maintain causal consistency",
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -251,7 +309,7 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 		} else {
 			resp = &response.Response{
 				Result: "Error",
-				Msg:    "Payload out of date",
+				Msg:    "Unable to serve request and maintain causal consistency",
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -314,6 +372,32 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
+	// Check if shard is up
+	oneIsUp := false
+	sID := shard.GetShardID(shardMap, key)
+	for _, node := range shardMap[sID] {
+		if areYouUp(node) {
+			oneIsUp = true
+		}
+	}
+	if !oneIsUp {
+		var resp *response.Response
+		resp = &response.Response{
+			Result: "Error",
+			Msg:    fmt.Sprintf("Unable to access key: %s", key),
+			Payload: response.Payload{
+				VectorClocks: vectorClocks,
+			},
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		r, err := json.Marshal(resp)
+		if err != nil {
+			log.Printf("Unable to marshal response: %v\n", err)
+		}
+		w.Write(r)
+		return
+	}
+
 	//payload := r.PostFormValue("payload")
 
 	data := r.PostFormValue("payload")
@@ -360,7 +444,7 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 		} else {
 			resp = &response.Response{
 				Result: "Error",
-				Msg:    "Payload out of date",
+				Msg:    "Unable to serve request and maintain causal consistency",
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -382,7 +466,7 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 		} else if len(payload.VectorClocks) <= 0 {
 			resp = &response.Response{
 				Result: "Error",
-				Msg:    "Payload out of date",
+				Msg:    "Unable to serve request and maintain causal consistency",
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -401,7 +485,7 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 		} else {
 			resp = &response.Response{
 				Result: "Error",
-				Msg:    "Payload out of date",
+				Msg:    "Unable to serve request and maintain causal consistency",
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -465,6 +549,32 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["subject"]
 
+	// Check if shard is up
+	oneIsUp := false
+	sID := shard.GetShardID(shardMap, key)
+	for _, node := range shardMap[sID] {
+		if areYouUp(node) {
+			oneIsUp = true
+		}
+	}
+	if !oneIsUp {
+		var resp *response.Response
+		resp = &response.Response{
+			Result: "Error",
+			Msg:    fmt.Sprintf("Unable to access key: %s", key),
+			Payload: response.Payload{
+				VectorClocks: vectorClocks,
+			},
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		r, err := json.Marshal(resp)
+		if err != nil {
+			log.Printf("Unable to marshal response: %v\n", err)
+		}
+		w.Write(r)
+		return
+	}
+
 	r.Header.Add("content-type", "application/x-www-form-urlencoded")
 	data := r.PostFormValue("payload")
 
@@ -510,7 +620,7 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 		} else {
 			resp = &response.Response{
 				Result: "Error",
-				Msg:    "Payload out of date",
+				Msg:    "Unable to serve request and maintain causal consistency",
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -531,7 +641,7 @@ func subjectDEL(w http.ResponseWriter, r *http.Request) {
 		} else {
 			resp = &response.Response{
 				Result: "Error",
-				Msg:    "Payload out of date",
+				Msg:    "Unable to serve request and maintain causal consistency",
 				Payload: response.Payload{
 					VectorClocks: vectorClocks,
 				},
@@ -592,6 +702,19 @@ var views []string
 var myIP string
 var shardMap map[int][]string
 var numShard int
+
+func areYouUp(node string) bool {
+	timeout := time.Duration(300 * time.Millisecond)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	_, err := client.Get(fmt.Sprintf("http://%s", node))
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return true
+}
 
 func GetShardMap() map[int][]string {
 	return shardMap
@@ -1072,7 +1195,7 @@ func shardCountGET(w http.ResponseWriter, r *http.Request) {
 		count := new(int)
 		*count = 0
 		for key := range KVStore.KeyvalMap {
-			if shard.GetShardID(shardMap, key) >= 0 {
+			if shard.GetShardID(shardMap, key) == shardID {
 				*count++
 			}
 		}

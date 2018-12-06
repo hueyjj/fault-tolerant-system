@@ -24,6 +24,7 @@ func Serve(ipPort string) {
 
 	router := mux.NewRouter()
 	// Add handlers here
+	router.HandleFunc("/", pingGET).Methods("GET")
 	router.HandleFunc("/hello", helloGET).Methods("GET")
 	router.HandleFunc("/hello", helloPOST).Methods("POST")
 	router.HandleFunc("/test", testPOST).Methods("POST")
