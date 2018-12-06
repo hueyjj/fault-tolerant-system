@@ -89,5 +89,22 @@ func ShardIt(views string, nodesPerShard int) (map[int][]string, error) {
 	}
 
 	return idToShards, nil
+}
 
+func GetShardID(iptable map[int][]string, key string) int {
+	// Get the keys from the table
+	keys := []string{}
+	for key := range iptable {
+		conv := strconv.Itoa(key)
+		keys = append(keys, conv)
+	}
+
+	// use the keys to make a hash ring
+	ring := hashring.New(keys)
+	// Hash the key, and find the shard it corr. to
+	node, _ := ring.GetNode(key)
+	// convert the string node to an int
+	shardID, _ := strconv.Atoi(node)
+
+	return shardID
 }
