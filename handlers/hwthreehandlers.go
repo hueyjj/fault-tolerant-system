@@ -216,7 +216,8 @@ func subjectGET(w http.ResponseWriter, r *http.Request) {
 		if isGreaterEqual(key, vectorClocks, payload.VectorClocks) {
 			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
 			value, _ := KVStore.Get(key)
-			owner := shard.GetShardID(shardMap, key)
+			owner := new(int)
+			*owner = shard.GetShardID(shardMap, key)
 			resp = &response.Response{
 				Result: "Success",
 				Value:  value,
@@ -345,7 +346,8 @@ func subjectSEARCH(w http.ResponseWriter, r *http.Request) {
 		*isExists = true
 		if isGreaterEqual(key, vectorClocks, payload.VectorClocks) {
 			vectorClocks[key] = mergeClock(key, vectorClocks, payload.VectorClocks)
-			owner := shard.GetShardID(shardMap, key)
+			owner := new(int)
+			*owner = shard.GetShardID(shardMap, key)
 			resp = &response.Response{
 				Result:   "Success",
 				IsExists: isExists,
@@ -970,11 +972,12 @@ func mergeClock(key string, v1, v2 map[string]vectorclock.Unit) vectorclock.Unit
 //}
 
 func shardGET(w http.ResponseWriter, r *http.Request) {
-	myShardID := -1
+	myShardID := new(int)
+	*myShardID = -1
 	for shardID, nodes := range shardMap {
 		for _, node := range nodes {
 			if myIP == node {
-				myShardID = shardID
+				*myShardID = shardID
 				// Could break early here?
 			}
 		}
@@ -1032,7 +1035,7 @@ func shardMemberGET(w http.ResponseWriter, r *http.Request) {
 	} else {
 		resp = &response.ShardResponse{
 			Result: "Error",
-			Msg:    fmt.Sprintf("No shard with id %s", shardID),
+			Msg:    fmt.Sprintf("No shard with id %d", shardID),
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -1050,10 +1053,11 @@ func shardCountGET(w http.ResponseWriter, r *http.Request) {
 
 	var resp *response.ShardResponse
 	if _, ok := shardMap[shardID]; ok {
-		count := 0
+		count := new(int)
+		*count = 0
 		for key := range KVStore.KeyvalMap {
 			if shard.GetShardID(shardMap, key) >= 0 {
-				count++
+				*count++
 			}
 		}
 		resp = &response.ShardResponse{
@@ -1078,6 +1082,9 @@ func shardCountGET(w http.ResponseWriter, r *http.Request) {
 
 func shardChangePUT(w http.ResponseWriter, r *http.Request) {
 	num, _ := strconv.Atoi(r.PostFormValue("num"))
+	if num == numShard {
+		return
+	}
 
 	var resp *response.ShardResponse
 	if num > len(views) {
@@ -1086,6 +1093,12 @@ func shardChangePUT(w http.ResponseWriter, r *http.Request) {
 			Msg:    fmt.Sprintf("Not enough nodes for %d shards", num),
 		}
 		w.WriteHeader(http.StatusBadRequest)
+		dataResp, err := json.Marshal(resp)
+		if err != nil {
+			log.Printf("Unable to marshal response: %v\n", err)
+		}
+		w.Write(dataResp)
+		return
 	}
 
 	lonleyNodeFound := false
@@ -1113,6 +1126,9 @@ func shardChangePUT(w http.ResponseWriter, r *http.Request) {
 			ShardIDs: allShardIDs,
 		}
 		w.WriteHeader(http.StatusOK)
+
+		// Tell everyone else we changed shard number
+		tellAllNewShardMap(views, numShard)
 	}
 
 	dataResp, err := json.Marshal(resp)

@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -303,4 +304,32 @@ func findNextNode(iptable map[string]int) (string, error) {
 		return "", errors.New("Unable to find valid node url")
 	}
 	return "http://" + nodeURL, nil
+}
+
+func tellAllNewShardMap(views []string, numShard int) {
+	form := url.Values{}
+	form.Add("num", strconv.Itoa(numShard))
+
+	for _, view := range views {
+		nodeURL := fmt.Sprintf("http://%s/shard/changeShardNumber", view)
+		log.Printf("Telling %s\n", nodeURL)
+
+		req, err := http.NewRequest(http.MethodPut, nodeURL, strings.NewReader(form.Encode()))
+		if err != nil {
+			log.Printf("%v", err)
+		}
+
+		req.Header.Add("content-type", "application/x-www-form-urlencoded")
+		if err != nil {
+			log.Printf("Unable to create DEL request: nodeURL=%s %v\n", nodeURL, err)
+		}
+
+		// Don't care about response here, just do it
+		client := &http.Client{}
+		_, err = client.Do(req)
+		if err != nil {
+			log.Printf("Unable to do DEL request: %v\n", err)
+		}
+		log.Printf("Finished telling %s\n", nodeURL)
+	}
 }
