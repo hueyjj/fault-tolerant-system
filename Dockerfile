@@ -2,6 +2,7 @@ FROM golang:latest AS build
 WORKDIR /go/src/bitbucket.org/cmps128gofour/homework4
 RUN go get -u github.com/gorilla/mux
 RUN go get github.com/serialx/hashring
+RUN go get github.com/sirupsen/logrus
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
 
