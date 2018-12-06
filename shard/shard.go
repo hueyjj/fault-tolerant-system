@@ -17,12 +17,16 @@ func FixLonelyNodes(shardTable map[int][]string) error {
 
 	// Run through the map
 	for key, value := range shardTable {
-		// If the arr has less than 2
-		// nodes its a lonely node
-		if len(value) <= 1 {
+		// If the arr has only one
+		// node its a lonely node
+		if len(value) == 1 {
 			// push this node into the lonely nodes array
 			lonelyNodes = append(lonelyNodes, value[0])
 			// and delete the key from the table
+			delete(shardTable, key)
+			continue
+		}
+		if len(value) == 0 {
 			delete(shardTable, key)
 			continue
 		}
@@ -49,7 +53,69 @@ func FixLonelyNodes(shardTable map[int][]string) error {
 	return nil
 }
 
-func ShardIt(views string, nodesPerShard int) (map[int][]string, error) {
+func manualPlace(views []string, S int) (map[int][]string, error) {
+	idToShards := map[int][]string{}
+
+	for i := 0; i < S; i++ {
+		idToShards[i] = []string{}
+	}
+
+	count := 0
+
+	for i, view := range views {
+
+		if i != 0 && i%(len(views)/S) == 0 {
+			count++
+		}
+
+		idToShards[count] = append(idToShards[count], view)
+	}
+
+	return idToShards, nil
+}
+
+// Shard creates a map of ids to shards , the map will have a size that is <= S
+func Shard(views string, S int) (map[int][]string, error) {
+
+	// Turn the views into an arr
+	tviews := strings.Split(views, ",")
+
+	// If len(views) is divisible by S then
+	// manually place items in the map
+	if len(tviews)%S == 0 {
+		return manualPlace(tviews, S)
+	}
+
+	// Make the groups into a map,
+	// where the key is the id
+	// and the value is the group
+	idToShards := map[int][]string{}
+
+	shardIDs := []string{}
+	// Prepopulate the map w empty shards
+	for i := 0; i < S; i++ {
+		idToShards[i] = []string{}
+		conv := strconv.Itoa(i)
+		shardIDs = append(shardIDs, conv)
+	}
+
+	// Make a hashring using the shardIDS
+	ring := hashring.New(shardIDs)
+
+	// Uniformly distribute values in tviews
+	for _, view := range tviews {
+		asciiShardNumber, _ := ring.GetNode(view)
+		shardNumber, _ := strconv.Atoi(asciiShardNumber)
+		idToShards[shardNumber] = append(idToShards[shardNumber], view)
+	}
+
+	FixLonelyNodes(idToShards)
+	return idToShards, nil
+}
+
+// ShardN makes a map of shards where each shard has
+// nodePerShard nodes in it
+func ShardN(views string, nodesPerShard int) (map[int][]string, error) {
 
 	// you can't have less than one node per shard
 	if nodesPerShard <= 1 {
