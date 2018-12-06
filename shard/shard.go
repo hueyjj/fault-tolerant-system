@@ -53,63 +53,48 @@ func FixLonelyNodes(shardTable map[int][]string) error {
 	return nil
 }
 
-func manualPlace(views []string, S int) (map[int][]string, error) {
+func Shard(views []string, S int) (map[int][]string, error) {
 	idToShards := map[int][]string{}
 
-	for i := 0; i < S; i++ {
-		idToShards[i] = []string{}
-	}
-
-	count := 0
-
-	for i, view := range views {
-
-		if i != 0 && i%(len(views)/S) == 0 {
-			count++
+	// If we have more shards than nodes
+	// then make one big shard and return
+	if S >= len(views) {
+		idToShards[0] = []string{}
+		for _, view := range views {
+			idToShards[0] = append(idToShards[0], view)
 		}
-
-		idToShards[count] = append(idToShards[count], view)
+		return idToShards, nil
 	}
 
-	return idToShards, nil
-}
-
-// Shard creates a map of ids to shards , the map will have a size that is <= S
-func Shard(views string, S int) (map[int][]string, error) {
-
-	// Turn the views into an arr
-	tviews := strings.Split(views, ",")
-
-	// If len(views) is divisible by S then
-	// manually place items in the map
-	if len(tviews)%S == 0 {
-		return manualPlace(tviews, S)
-	}
-
-	// Make the groups into a map,
-	// where the key is the id
-	// and the value is the group
-	idToShards := map[int][]string{}
-
-	shardIDs := []string{}
-	// Prepopulate the map w empty shards
+	// Otherwise, Insert S shards into map
 	for i := 0; i < S; i++ {
 		idToShards[i] = []string{}
-		conv := strconv.Itoa(i)
-		shardIDs = append(shardIDs, conv)
 	}
 
-	// Make a hashring using the shardIDS
-	ring := hashring.New(shardIDs)
-
-	// Uniformly distribute values in tviews
-	for _, view := range tviews {
-		asciiShardNumber, _ := ring.GetNode(view)
-		shardNumber, _ := strconv.Atoi(asciiShardNumber)
-		idToShards[shardNumber] = append(idToShards[shardNumber], view)
+	// Make a copy of the views arr
+	copy := []string{}
+	for _, str := range views {
+		copy = append(copy, str)
 	}
 
-	FixLonelyNodes(idToShards)
+	index := 0
+	// While the copy is not empty
+	for len(copy) > 0 {
+		// pop an item off the copy
+		x := copy[0]
+		copy = copy[1:]
+		// index -> item we popped
+		idToShards[index] = append(idToShards[index], x)
+		// Increment index in a circular way
+		index = (index + S + 1) % S
+	}
+
+	err := FixLonelyNodes(idToShards)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return idToShards, nil
 }
 
