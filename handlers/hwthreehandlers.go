@@ -811,6 +811,13 @@ func viewDELETE(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("viewPUT: views: %+v iptable: %+v\n", views, iptable)
 
+	shardMap, _ = shard.Shard(views, numShard)
+	// Update our shard map
+	for hasLonelyNodes() {
+		numShard--
+		shardMap, _ = shard.Shard(views, numShard)
+	}
+
 	// Convert response into json structure and then into bytes
 	data, err := json.Marshal(resp)
 	if err != nil {
@@ -855,6 +862,15 @@ func viewUPDATE(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+func hasLonelyNodes() bool {
+	for _, val := range shardMap {
+		if len(val) == 1 {
+			return true
+		}
+	}
+	return false
 }
 
 func unixNow() int64 {
